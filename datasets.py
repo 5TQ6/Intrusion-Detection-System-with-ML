@@ -53,33 +53,3 @@ class WEBIDS23(Dataset):
     def __getitem__(self, idx):
         return self.features[idx], self.labels[idx]
 
-if __name__ == '__main__':
-    # Example usage:
-    # Assuming 'Datasets/WEB-IDS23/' is the path to your dataset
-    dataset_path = 'Datasets/WEB-IDS23/'
-    
-    try:
-        webids_dataset = WEBIDS23(root_dir=dataset_path)
-        webids_dataloader = DataLoader(webids_dataset, batch_size=256, shuffle=True, num_workers=4, pin_memory=True, prefetch_factor=2)
-        print(f"Dataset loaded successfully. Number of samples: {len(webids_dataset)}")
-        
-        # Access a sample
-        features, label = webids_dataset[0]
-        print(f"First sample features shape: {features.shape}")
-        print(f"First sample label: {label}")
-        print(f"Label mapping: {webids_dataset.label_map}")
-
-
-        # You can then use this dataset with a DataLoader
-        from torch.utils.data import DataLoader
-        data_loader = DataLoader(webids_dataset, batch_size=32, shuffle=True)
-        
-        for features_batch, labels_batch in data_loader:
-            print(f"Features batch shape: {features_batch.shape}")
-            print(f"Labels batch shape: {labels_batch.shape}")
-            break # Just print one batch
-            
-    except RuntimeError as e:
-        print(f"Error loading dataset: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
