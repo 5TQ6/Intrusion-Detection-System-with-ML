@@ -19,14 +19,15 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
             sorted_indices = np.argsort(label_frequencies)[::-1]
             label_frequencies = [label_frequencies[i] for i in sorted_indices]
             labels = [labels[i] for i in sorted_indices]
-            plt.figure(figsize=(12,6), dpi = 500)
-            plt.bar(x = labels, height = label_frequencies)
+            plt.figure(figsize=(3.5, 3.0))
+            plt.bar(x = labels, height = label_frequencies, color='#0072B2')
             plt.xlabel('Attack Types')
             plt.ylabel('Frequency')
-            plt.title('Distribution of Attack Types in 5G NIDD Dataset')
-            plt.xticks(rotation=45)
+            plt.xticks(rotation=45, ha='right')
+            plt.gca().spines['top'].set_visible(False)
+            plt.gca().spines['right'].set_visible(False)
             plt.tight_layout()
-            plt.savefig(os.path.join(file_path, version + '_' + 'attack_type_distribution.png'), dpi=600)
+            plt.savefig(os.path.join(file_path, version + '_' + 'attack_type_distribution.pdf'), format='pdf', bbox_inches='tight')
             plt.show()
             plt.close()
 
@@ -59,14 +60,15 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
             sorted_indices = np.argsort(label_frequencies)[::-1]
             label_frequencies = [label_frequencies[i] for i in sorted_indices]
             labels = [labels[i] for i in sorted_indices]
-            plt.figure(figsize=(12,6), dpi = 500)
-            plt.bar(x = labels, height = label_frequencies)
+            plt.figure(figsize=(3.5, 3.0))
+            plt.bar(x = labels, height = label_frequencies, color='#0072B2')
             plt.xlabel('Attack Types')
             plt.ylabel('Frequency')
-            plt.title(f'Distribution of Attack Types in 5G NIDD Dataset with {sampling_method}')
-            plt.xticks(rotation=45)
+            plt.xticks(rotation=45, ha='right')
+            plt.gca().spines['top'].set_visible(False)
+            plt.gca().spines['right'].set_visible(False)
             plt.tight_layout()
-            plt.savefig(os.path.join(file_path, version + '_' + f'attack_type_distribution_with_{sampling_method}.png'), dpi=600)
+            plt.savefig(os.path.join(file_path, version + '_' + f'attack_type_distribution_with_{sampling_method}.pdf'), format='pdf', bbox_inches='tight')
             plt.show()
             plt.close()
 

@@ -20,6 +20,30 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import MinMaxScaler, PowerTransformer, StandardScaler
 from collections import Counter
 
+def apply_ieee_style():
+    """Applies IEEE academic style to matplotlib plots."""
+    plt.rcParams.update({
+        'figure.figsize': (3.5, 3.0),
+        'font.family': 'serif',
+        'font.serif': ['Times New Roman'],
+        'font.size': 10,
+        'axes.labelsize': 10,
+        'axes.titlesize': 10,
+        'legend.fontsize': 8,
+        'xtick.labelsize': 8,
+        'ytick.labelsize': 8,
+        'axes.spines.top': False,
+        'axes.spines.right': False,
+        'axes.grid': True,
+        'grid.alpha': 0.5,
+        'grid.linestyle': '--',
+        'savefig.format': 'pdf',
+        'savefig.bbox': 'tight',
+        'axes.prop_cycle': plt.cycler(color=['#0072B2', '#D55E00', '#009E73', '#CC79A7', '#F0E442', '#56B4E9'])
+    })
+
+apply_ieee_style()
+
 def print_memory_usage(step=""):
     try:
         import psutil
@@ -65,14 +89,13 @@ def explore_dataset(X, y=None, title="Dataset Exploration", save_path=None):
         advice_list.append("Missing Values: If <5%, drop rows. If >50%, drop column. Else, impute (Median for num, Mode for cat).")
         
         # Visualization: Missing Values
-        plt.figure(figsize=(10, 6))
-        sns.barplot(x=missing_table['Percent'][:20], y=missing_table.index[:20], palette='viridis')
-        plt.title('Top 20 Features with Missing Values')
+        plt.figure(figsize=(3.5, 4.5))
+        sns.barplot(x=missing_table['Percent'][:20], y=missing_table.index[:20], color='#0072B2')
         plt.xlabel('Percentage Missing')
         plt.tight_layout()
         if save_path:
              if not os.path.exists(save_path): os.makedirs(save_path)
-             plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_missing.png"))
+             plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_missing.pdf"))
         plt.show()
         plt.close()
     else:
@@ -99,18 +122,16 @@ def explore_dataset(X, y=None, title="Dataset Exploration", save_path=None):
             
             # Visualization: Distribution of top skewed feature
             top_skewed = high_skew.index[0]
-            plt.figure(figsize=(12, 5))
-            plt.subplot(1, 2, 1)
-            sns.histplot(X[top_skewed], kde=True, bins=30, color='blue')
-            plt.title(f'Distribution of {top_skewed} (Skew: {high_skew.iloc[0]:.2f})')
+            plt.figure(figsize=(3.5, 5))
+            plt.subplot(2, 1, 1)
+            sns.histplot(X[top_skewed], kde=True, bins=30, color='#0072B2')
             
-            plt.subplot(1, 2, 2)
-            sns.boxplot(x=X[top_skewed], color='cyan')
-            plt.title(f'Boxplot of {top_skewed}')
+            plt.subplot(2, 1, 2)
+            sns.boxplot(x=X[top_skewed], color='#56B4E9')
             plt.tight_layout()
             if save_path:
                 if not os.path.exists(save_path): os.makedirs(save_path)
-                plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_skewness.png"))
+                plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_skewness.pdf"))
             plt.show()
             plt.close()
         else:
@@ -126,15 +147,14 @@ def explore_dataset(X, y=None, title="Dataset Exploration", save_path=None):
 
         # Visualization: Correlation Matrix (if not too many features)
         if len(numeric_cols) <= 50: # Limit to avoid clutter
-            plt.figure(figsize=(12, 10))
+            plt.figure(figsize=(3.5, 3.5))
             corr = X[numeric_cols].corr()
             mask = np.triu(np.ones_like(corr, dtype=bool))
             sns.heatmap(corr, mask=mask, annot=False, cmap='coolwarm', center=0, square=True, linewidths=.5)
-            plt.title('Correlation Matrix (Numerical Features)')
             plt.tight_layout()
             if save_path:
                 if not os.path.exists(save_path): os.makedirs(save_path)
-                plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_correlation.png"))
+                plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_correlation.pdf"))
             plt.show()
             plt.close()
         else:
@@ -160,13 +180,12 @@ def explore_dataset(X, y=None, title="Dataset Exploration", save_path=None):
         if len(cat_cols) > 0:
             col = cat_cols[0]
             top_cats = X[col].value_counts().head(10)
-            plt.figure(figsize=(10, 6))
-            sns.barplot(x=top_cats.values, y=top_cats.index, palette='magma')
-            plt.title(f'Top 10 Categories in {col}')
+            plt.figure(figsize=(3.5, 3.5))
+            sns.barplot(x=top_cats.values, y=top_cats.index, color='#0072B2')
             plt.tight_layout()
             if save_path:
                 if not os.path.exists(save_path): os.makedirs(save_path)
-                plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_categorical.png"))
+                plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_categorical.pdf"))
             plt.show()
             plt.close()
 
@@ -182,15 +201,15 @@ def explore_dataset(X, y=None, title="Dataset Exploration", save_path=None):
         print(counts)
         
         # Visualization: Class Balance
-        plt.figure(figsize=(8, 5))
-        sns.countplot(x=y_series, palette='Set2')
-        plt.title('Target Class Distribution')
+        plt.figure(figsize=(3.5, 3.5))
+        sns.countplot(x=y_series, color='#0072B2')
         plt.xlabel('Class')
         plt.ylabel('Count')
+        plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
         if save_path:
             if not os.path.exists(save_path): os.makedirs(save_path)
-            plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_target_dist.png"))
+            plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_target_dist.pdf"))
         plt.show()
         plt.close()
 
@@ -211,6 +230,13 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='mi
     # low_memory=false handles mixed types
     df = pd.read_csv(db_path, low_memory=False)
 
+    # 0. DROP ARTIFACTS EARLY
+    # Drop 'Unnamed' columns (index artifacts) immediately so they don't prevent duplicate removal
+    unnamed_cols = [c for c in df.columns if 'Unnamed' in str(c)]
+    if unnamed_cols:
+        print(f"[Preprocessing] Dropping artifact columns: {unnamed_cols}")
+        df.drop(columns=unnamed_cols, inplace=True)
+
     # Remove duplicate rows to prevent data leakage and bias
     print(f"Original shape: {df.shape}")
     df.drop_duplicates(inplace=True)
@@ -224,7 +250,7 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='mi
     # 2. METADATA & TOPOLOGY: Specific to the testbed (e.g., Row ID, Timestamp, VLANs).
     # We drop these to prevent "Shortcut Learning". Feature selection algorithms often select these
     # because they accidentally correlate with the target in a static dataset, but they fail in real networks.
-    metadata_cols = ['Seq', 'RunTime', 'sVid', 'dVid', 'SrcTCPBase', 'DstTCPBase', 'sHops', 'dHops', 'Unnamed: 0']
+    metadata_cols = ['Seq', 'RunTime', 'sVid', 'dVid', 'SrcTCPBase', 'DstTCPBase', 'sHops', 'dHops']
     
     drop_cols = target_cols + metadata_cols
     
@@ -233,6 +259,9 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='mi
 
     X = df.drop(columns=existing_drop_cols, axis=1)
     y = df['Attack Type']
+    
+    print(f"[Preprocessing] Final feature set ({len(X.columns)}): {list(X.columns)}")
+    
     del df
     
     # Replace infinite values (e.g., in 'Rate' columns) with NaN
@@ -267,8 +296,7 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='mi
     print(dist_comparison)
     
     # Visualize the class distribution to confirm stratification
-    ax = dist_comparison.plot(kind='bar', figsize=(12, 6), width=0.8)
-    ax.set_title('Class Distribution Across Splits (Stratification Check)', fontsize=16)
+    ax = dist_comparison.plot(kind='bar', figsize=(3.5, 3.5), width=0.8)
     ax.set_ylabel('Proportion', fontsize=12)
     ax.set_xlabel('Attack Type', fontsize=12)
     plt.xticks(rotation=45, ha='right')
@@ -279,8 +307,8 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='mi
     if image_save_path:
         if not os.path.exists(image_save_path):
             os.makedirs(image_save_path)
-        plt.savefig(os.path.join(image_save_path, 'class_distribution_check.png'), dpi=600)
-        print(f"Saved distribution plot to {os.path.join(image_save_path, 'class_distribution_check.png')}")
+        plt.savefig(os.path.join(image_save_path, 'class_distribution_check.pdf'))
+        print(f"Saved distribution plot to {os.path.join(image_save_path, 'class_distribution_check.pdf')}")
 
     plt.show()
     plt.close()
@@ -351,13 +379,12 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='mi
             
             if top_skewed_cols:
                 print(f"[Visualization] Plotting top 3 skewed features before transformation: {top_skewed_cols}")
-                plt.figure(figsize=(18, 5))
+                plt.figure(figsize=(3.5, 6))
                 for i, col in enumerate(top_skewed_cols):
-                    plt.subplot(1, 3, i+1)
-                    sns.histplot(X_train[col], kde=True, color='salmon', bins=30)
-                    plt.title(f'Before: {col}\nSkew: {X_train[col].skew():.2f}')
+                    plt.subplot(3, 1, i+1)
+                    sns.histplot(X_train[col], kde=True, color='#D55E00', bins=30)
                 plt.tight_layout()
-                plt.savefig(os.path.join(image_save_path, 'distribution_before_pt.png'))
+                plt.savefig(os.path.join(image_save_path, 'distribution_before_pt.pdf'))
                 plt.show()
                 plt.close()
 
@@ -370,13 +397,12 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='mi
         # Visualization: After PowerTransformer
         if image_save_path and 'top_skewed_cols' in locals() and top_skewed_cols:
             print(f"[Visualization] Plotting top 3 skewed features after transformation")
-            plt.figure(figsize=(18, 5))
+            plt.figure(figsize=(3.5, 6))
             for i, col in enumerate(top_skewed_cols):
-                plt.subplot(1, 3, i+1)
-                sns.histplot(X_train[col], kde=True, color='skyblue', bins=30)
-                plt.title(f'After: {col}\nSkew: {X_train[col].skew():.2f}')
+                plt.subplot(3, 1, i+1)
+                sns.histplot(X_train[col], kde=True, color='#0072B2', bins=30)
             plt.tight_layout()
-            plt.savefig(os.path.join(image_save_path, 'distribution_after_pt.png'))
+            plt.savefig(os.path.join(image_save_path, 'distribution_after_pt.pdf'))
             plt.show()
             plt.close()
 
@@ -407,17 +433,16 @@ def analyze_correlations(X, file_path=None, version='v1', threshold=0.95):
     """
     Plots the correlation matrix and identifies highly correlated features.
     """
-    plt.figure(figsize=(24, 20))
+    plt.figure(figsize=(3.5, 3.5))
     corr_matrix = X.corr()
     
     # Plot heatmap
     # Mask the upper triangle to make it easier to read
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
     sns.heatmap(corr_matrix, mask=mask, annot=False, cmap='coolwarm', center=0, square=True, linewidths=.5)
-    plt.title('Feature Correlation Matrix')
     
     if file_path:
-        plt.savefig(os.path.join(file_path, f"{version}_correlation_matrix.png"), dpi=300)
+        plt.savefig(os.path.join(file_path, f"{version}_correlation_matrix.pdf"))
     
     plt.show()
     plt.close()
@@ -434,24 +459,25 @@ def analyze_correlations(X, file_path=None, version='v1', threshold=0.95):
         
     return to_drop
 
-def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, output_encoder, file_path, version, results_file_name, cm_title):
+def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, output_encoder, file_path, version, results_file_name, cm_title, notes=""):
     accuracy = accuracy_score(y_val, y_pred)
     precision = precision_score(y_val, y_pred, average='weighted')
     recall = recall_score(y_val, y_pred, average='weighted')
     f1 = f1_score(y_val, y_pred, average='weighted')
-    classification_rep = classification_report(y_val, y_pred, target_names=output_encoder.classes_)
+    classification_rep = classification_report(y_val, y_pred, target_names=output_encoder.classes_, digits=8)
 
-    print(f"Accuracy: {accuracy:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall: {recall:.4f}")
-    print(f"F1 Score: {f1:.4f}")
+    print(f"Accuracy: {accuracy:.8f}")
+    print(f"Precision: {precision:.8f}")
+    print(f"Recall: {recall:.8f}")
+    print(f"F1 Score: {f1:.8f}")
     print(f"Training Time: {training_time:.4f} seconds")
     print(f"Prediction Time: {prediction_time:.4f} seconds")
-    print(f"latency per sample: {prediction_time/len(y_val):.6f} seconds")
+    print(f"latency per sample: {prediction_time/len(y_val):.8f} seconds")
     print(f"\nClassification Report: \n{classification_rep}")
 
     # Get current time for the log
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp_safe = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     full_path = os.path.join(file_path, version + '_' + results_file_name)
 
     # 'a' mode creates the file if missing, appends if present
@@ -461,14 +487,18 @@ def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, outp
         f.write(f"Experiment Run: {timestamp}\n")
         f.write(f"{'='*90}\n")
         
+        # Add notes section
+        if notes:
+            f.write(f"Notes:\n{notes}\n\n")
+
         # 2. Write your metrics
-        f.write(f"Accuracy: {accuracy:.4f}\n")
-        f.write(f"Precision: {precision:.4f}\n")
-        f.write(f"Recall: {recall:.4f}\n")
-        f.write(f"F1 Score: {f1:.4f}\n")
+        f.write(f"Accuracy: {accuracy:.8f}\n")
+        f.write(f"Precision: {precision:.8f}\n")
+        f.write(f"Recall: {recall:.8f}\n")
+        f.write(f"F1 Score: {f1:.8f}\n")
         f.write(f"Training Time: {training_time:.4f} seconds\n")
         f.write(f"Prediction Time: {prediction_time:.4f} seconds\n")
-        f.write(f"Latency per sample: {prediction_time/len(y_val):.6f} seconds\n")
+        f.write(f"Latency per sample: {prediction_time/len(y_val):.8f} seconds\n")
         f.write(f"\nClassification Report: \n{classification_rep}\n")
 
         # 3. Add a blank line at the end for spacing
@@ -476,13 +506,14 @@ def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, outp
         
     # Plot confusion matrix
     cm = confusion_matrix(y_val, y_pred)
-    plt.figure(figsize=(10, 7), dpi=600)
-    sns.heatmap(cm, annot=True, fmt='d')
+    plt.figure(figsize=(3.5, 3.5))
+    sns.heatmap(cm, annot=True, fmt='d', annot_kws={"size": 6})
     plt.xlabel('Predicted')
     plt.ylabel('Truth')
-    plt.title(cm_title)
     # Save confusion matrix plot
-    plt.savefig(os.path.join(file_path, version + '_confusion_matrix.png'))
+    # Use timestamp to prevent overwriting and include model identifier from results filename
+    model_id = os.path.splitext(results_file_name)[0]
+    plt.savefig(os.path.join(file_path, f"{version}_{model_id}_{timestamp_safe}_confusion_matrix.pdf"))
     plt.show()
     plt.close()
 
@@ -588,10 +619,9 @@ def train_and_evaluate_pytorch_model(model, train_loader, val_loader, num_epochs
     prediction_time = time.time() - start_time
     y_pred = np.array(all_preds)
     
-    plt.figure(figsize=(12, 5))
+    plt.figure(figsize=(3.5, 2.5))
     plt.plot(train_acc_history, label='Training Accuracy')
     plt.plot(val_acc_history, label='Validation Accuracy')
-    plt.title(f'{model_name} Accuracy')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend()
@@ -858,13 +888,17 @@ def perform_embedded_feature_selection(X_train, y_train, n_features_to_select=20
     return selected_features
 # --------------------------------------------------------------------------------------
 # The following functions are implemented inside the (perform_voting_feature_selection) function
-def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features=20, sample_size=None):
+def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, random_state=42):
     """
     Runs multiple feature selection methods on a sample of data and evaluates them.
     Useful for deciding which method works best for your specific dataset.
     """
     results = {}
     feature_sets = {}
+    
+    # Set seed for reproducibility
+    if random_state is not None:
+        np.random.seed(random_state)
     
     # Downsample for speed during feature selection (optional)
     if sample_size and sample_size < len(X_train):
@@ -942,14 +976,12 @@ def plot_feature_selection_comparison(results, file_path=None, version='v1'):
     df_results = df_results.sort_values(by='Accuracy', ascending=False)
 
     # Set plot style
-    sns.set_theme(style="whitegrid")
     
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(3.5, 4.5))
     
     # Create bar chart (Horizontal for better readability of method names)
-    ax = sns.barplot(x='Accuracy', y='Method', data=df_results, palette='viridis', hue='Method', legend=False)
+    ax = sns.barplot(x='Accuracy', y='Method', data=df_results, color='#0072B2')
     
-    plt.title('Feature Selection Method Comparison', fontsize=16, fontweight='bold')
     plt.xlabel('Validation Accuracy', fontsize=12)
     plt.ylabel('Method', fontsize=12)
     plt.xlim(0, 1.05) # Accuracy is 0-1
@@ -963,20 +995,20 @@ def plot_feature_selection_comparison(results, file_path=None, version='v1'):
     if file_path:
         if not os.path.exists(file_path):
             os.makedirs(file_path)
-        filename = f"{version}_feature_selection_comparison.png"
-        plt.savefig(os.path.join(file_path, filename), dpi=600)
+        filename = f"{version}_feature_selection_comparison.pdf"
+        plt.savefig(os.path.join(file_path, filename))
         print(f"Saved plot to {os.path.join(file_path, filename)}")
         
     plt.show()
     plt.close()
 # --------------------------------------------------------------------------------------
 # The following functions i can choose from for feature selection and dimensionality reduction
-def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, top_k=3, file_path=None, version='v1'):
+def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, top_k=3, file_path=None, version='v1', random_state=42):
     """
     Selects features based on a majority vote from the top K performing feature selection methods.
     """
     # Run comparison to get scores and feature sets
-    sorted_results, feature_sets = compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features, sample_size)
+    sorted_results, feature_sets = compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features, sample_size, random_state)
     
     # Plot results if path is provided
     if file_path:
@@ -1132,21 +1164,19 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
     metrics = ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'Training Time (s)', 'Prediction Time (s)']
     
     # Set style
-    sns.set_theme(style="whitegrid")
     
     for metric in metrics:
         if metric not in df_results.columns:
             continue
             
         # Create a new figure for every metric
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(3.5, 3.5))
         
         # Create bar chart
         # hue='Model' assigns colors, legend=False hides the redundant legend
-        ax = sns.barplot(x='Model', y=metric, data=df_results, hue='Model', palette='viridis', legend=False)
+        ax = sns.barplot(x='Model', y=metric, data=df_results, hue='Model', legend=False)
         
         # Titles and Labels
-        plt.title(f'Model Comparison: {metric}', fontsize=16, fontweight='bold')
         plt.ylabel(metric, fontsize=12)
         plt.xlabel('Model', fontsize=12)
         plt.xticks(rotation=45)
@@ -1164,8 +1194,8 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
         if save_dir:
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-            filename = f"{version}_comparison_{metric.lower().replace(' ', '_').replace('(', '').replace(')', '')}.png"
-            plt.savefig(os.path.join(save_dir, filename), dpi=300)
+            filename = f"{version}_comparison_{metric.lower().replace(' ', '_').replace('(', '').replace(')', '')}.pdf"
+            plt.savefig(os.path.join(save_dir, filename))
             print(f"Saved {filename}")
             
         plt.show()
