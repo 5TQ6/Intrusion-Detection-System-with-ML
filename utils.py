@@ -16,6 +16,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.feature_selection import RFE, SelectKBest, f_classif, mutual_info_classif, chi2, VarianceThreshold, SequentialFeatureSelector, SelectFromModel, f_regression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import MinMaxScaler, PowerTransformer, StandardScaler
 from collections import Counter
@@ -299,7 +300,7 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='mi
     ax = dist_comparison.plot(kind='bar', figsize=(3.5, 3.5), width=0.8)
     ax.set_ylabel('Proportion', fontsize=12)
     ax.set_xlabel('Attack Type', fontsize=12)
-    plt.xticks(rotation=45, ha='right')
+    plt.xticks(rotation=90, ha='right')
     plt.legend(title='Dataset Split')
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
@@ -478,6 +479,10 @@ def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, outp
     # Get current time for the log
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     timestamp_safe = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
+
     full_path = os.path.join(file_path, version + '_' + results_file_name)
 
     # 'a' mode creates the file if missing, appends if present
@@ -506,14 +511,25 @@ def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, outp
         
     # Plot confusion matrix
     cm = confusion_matrix(y_val, y_pred)
-    plt.figure(figsize=(3.5, 3.5))
-    sns.heatmap(cm, annot=True, fmt='d', annot_kws={"size": 6})
-    plt.xlabel('Predicted')
-    plt.ylabel('Truth')
+    plt.figure(figsize=(4, 3.5))
+    
+    # IEEE Style Heatmap
+    ax = sns.heatmap(cm, annot=True, fmt='d', cbar=True, cmap='Blues',
+                xticklabels=output_encoder.classes_, yticklabels=output_encoder.classes_,
+                annot_kws={"size": 6}, linewidths=0.5, linecolor='gray')
+    
+    # Explicitly remove grid (crucial for heatmaps when global grid is on)
+    ax.grid(False)
+    
+    plt.xlabel('Predicted Class', fontsize=10, fontname='Times New Roman')
+    plt.ylabel('True Class', fontsize=10, fontname='Times New Roman')
+    plt.xticks(rotation=90, ha='center', fontsize=8, fontname='Times New Roman')
+    plt.yticks(fontsize=8, fontname='Times New Roman')
+    
     # Save confusion matrix plot
     # Use timestamp to prevent overwriting and include model identifier from results filename
     model_id = os.path.splitext(results_file_name)[0]
-    plt.savefig(os.path.join(file_path, f"{version}_{model_id}_{timestamp_safe}_confusion_matrix.pdf"))
+    plt.savefig(os.path.join(file_path, f"{version}_{model_id}_{timestamp_safe}_confusion_matrix.pdf"), format='pdf', bbox_inches='tight')
     plt.show()
     plt.close()
 
@@ -722,7 +738,8 @@ def perform_wrapper_feature_selection(X_train, y_train, n_features_to_select=20,
     """
     print(f"\n[Wrapper] Starting {method.upper()} Feature Selection to select top {n_features_to_select} features...")
     start_time = time.time()
-    estimator = RandomForestClassifier(n_estimators=20, random_state=42, n_jobs=-1) # Lightweight estimator for wrappers
+    # Use DecisionTree instead of RandomForest for Wrapper methods to significantly reduce runtime
+    estimator = DecisionTreeClassifier(random_state=42)
     
     if method == 'rfe':
         selector = RFE(estimator, n_features_to_select=n_features_to_select, step=0.1)
@@ -730,12 +747,12 @@ def perform_wrapper_feature_selection(X_train, y_train, n_features_to_select=20,
         selected_features = X_train.columns[selector.support_].tolist()
         
     elif method == 'forward':
-        sfs = SequentialFeatureSelector(estimator, n_features_to_select=n_features_to_select, direction='forward', cv=2)
+        sfs = SequentialFeatureSelector(estimator, n_features_to_select=n_features_to_select, direction='forward', cv=2, n_jobs=-1)
         sfs.fit(X_train, y_train)
         selected_features = X_train.columns[sfs.get_support()].tolist()
         
     elif method == 'backward':
-        sfs = SequentialFeatureSelector(estimator, n_features_to_select=n_features_to_select, direction='backward', cv=2)
+        sfs = SequentialFeatureSelector(estimator, n_features_to_select=n_features_to_select, direction='backward', cv=2, n_jobs=-1)
         sfs.fit(X_train, y_train)
         selected_features = X_train.columns[sfs.get_support()].tolist()
         
@@ -743,7 +760,7 @@ def perform_wrapper_feature_selection(X_train, y_train, n_features_to_select=20,
         # Simplified Stepwise: Forward selection but check if removal helps (simulated)
         # Scikit-learn doesn't support true stepwise, using Forward as proxy or custom loop
         # For this comparison, we will use Forward selection as a baseline for stepwise behavior
-        sfs = SequentialFeatureSelector(estimator, n_features_to_select=n_features_to_select, direction='forward', cv=2)
+        sfs = SequentialFeatureSelector(estimator, n_features_to_select=n_features_to_select, direction='forward', cv=2, n_jobs=-1)
         sfs.fit(X_train, y_train)
         selected_features = X_train.columns[sfs.get_support()].tolist()
         
@@ -959,6 +976,12 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
     for method, score in sorted_results.items():
         print(f"{method}: {score:.4f}")
         
+    # Check for similar accuracies and advise
+    if len(results) > 1 and np.std(list(results.values())) < 0.001:
+        print("\n[Advice] All methods achieved very similar accuracy.")
+        print("         This suggests the dataset has strong signal or high redundancy.")
+        print("         To differentiate methods, try reducing 'n_features' (e.g., to 5 or 10).")
+
     return sorted_results, feature_sets
 
 def plot_feature_selection_comparison(results, file_path=None, version='v1'):
@@ -975,20 +998,34 @@ def plot_feature_selection_comparison(results, file_path=None, version='v1'):
     # Sort by Accuracy
     df_results = df_results.sort_values(by='Accuracy', ascending=False)
 
-    # Set plot style
-    
-    plt.figure(figsize=(3.5, 4.5))
+    # Set plot style (IEEE Standard)
+    plt.figure(figsize=(3.5, 4.5)) # Width 3.5 (column), Height 4.5 (for 17 methods)
     
     # Create bar chart (Horizontal for better readability of method names)
-    ax = sns.barplot(x='Accuracy', y='Method', data=df_results, color='#0072B2')
+    ax = sns.barplot(x='Accuracy', y='Method', data=df_results, color='#0072B2', zorder=2)
     
-    plt.xlabel('Validation Accuracy', fontsize=12)
-    plt.ylabel('Method', fontsize=12)
-    plt.xlim(0, 1.05) # Accuracy is 0-1
+    plt.xlabel('Validation Accuracy', fontsize=10, fontname='Times New Roman')
+    plt.ylabel('Method', fontsize=10, fontname='Times New Roman')
+    plt.xticks(fontsize=8, fontname='Times New Roman')
+    plt.yticks(fontsize=8, fontname='Times New Roman')
+    
+    # Set X-axis limit to show differences clearly
+    min_acc = df_results['Accuracy'].min()
+    if min_acc > 0.9:
+        plt.xlim(0.9, 1.01)
+    else:
+        plt.xlim(0, 1.01)
+
+    # Grid and Spines
+    ax.grid(axis='x', linestyle='--', alpha=0.5, zorder=0)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_color('black')
     
     # Add value labels
     for container in ax.containers:
-        ax.bar_label(container, fmt='%.4f', padding=3, fontsize=10)
+        ax.bar_label(container, fmt='%.4f', padding=3, fontsize=8, fontname='Times New Roman')
         
     plt.tight_layout()
     
@@ -996,7 +1033,7 @@ def plot_feature_selection_comparison(results, file_path=None, version='v1'):
         if not os.path.exists(file_path):
             os.makedirs(file_path)
         filename = f"{version}_feature_selection_comparison.pdf"
-        plt.savefig(os.path.join(file_path, filename))
+        plt.savefig(os.path.join(file_path, filename), format='pdf', bbox_inches='tight')
         print(f"Saved plot to {os.path.join(file_path, filename)}")
         
     plt.show()
@@ -1027,6 +1064,13 @@ def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=
     for method in top_methods:
         all_selected_features.extend(feature_sets[method])
         
+    # Analyze overlap to explain similar accuracies
+    if len(top_methods) >= 2:
+        set1 = set(feature_sets[top_methods[0]])
+        set2 = set(feature_sets[top_methods[1]])
+        overlap = len(set1.intersection(set2))
+        print(f"[Voting] Overlap between top 2 methods ({top_methods[0]} & {top_methods[1]}): {overlap}/{n_features} features in common.")
+
     # Count occurrences
     feature_counts = Counter(all_selected_features)
     
@@ -1174,18 +1218,23 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
         
         # Create bar chart
         # hue='Model' assigns colors, legend=False hides the redundant legend
-        ax = sns.barplot(x='Model', y=metric, data=df_results, hue='Model', legend=False)
+        ax = sns.barplot(x='Model', y=metric, data=df_results, hue='Model', legend=False, zorder=2)
         
         # Titles and Labels
-        plt.ylabel(metric, fontsize=12)
-        plt.xlabel('Model', fontsize=12)
-        plt.xticks(rotation=45)
+        plt.ylabel(metric, fontsize=10, fontname='Times New Roman')
+        plt.xlabel('Model', fontsize=10, fontname='Times New Roman')
+        plt.xticks(rotation=45, fontsize=8, fontname='Times New Roman', ha='right')
+        plt.yticks(fontsize=8, fontname='Times New Roman')
+        
+        ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
         
         # Add value labels on top of bars
         for container in ax.containers:
             # Use 4 decimal places for accuracy/f1, 2 decimals for time
             fmt = '%.4f' if 'Time' not in metric else '%.2f'
-            ax.bar_label(container, fmt=fmt, padding=3, fontsize=10)
+            ax.bar_label(container, fmt=fmt, padding=3, fontsize=8, fontname='Times New Roman')
             
         # Adjust layout
         plt.tight_layout()
@@ -1195,7 +1244,7 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             filename = f"{version}_comparison_{metric.lower().replace(' ', '_').replace('(', '').replace(')', '')}.pdf"
-            plt.savefig(os.path.join(save_dir, filename))
+            plt.savefig(os.path.join(save_dir, filename), format='pdf', bbox_inches='tight')
             print(f"Saved {filename}")
             
         plt.show()
