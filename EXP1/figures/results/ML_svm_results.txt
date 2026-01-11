@@ -1,0 +1,72 @@
+==========================================================================================
+Experiment Run: 2026-01-10 13:03:17
+==========================================================================================
+Notes:
+
+- Preprocessing: Yeo-Johnson transform applied.
+- Feature Selection: Voting method with top 3 selectors.
+- Sampling: SMOTE used on the training set.
+- Fixed the problem of the feature selection function not having a random state parameter for reproducibility.
+
+Accuracy: 0.94572611
+Precision: 0.94878298
+Recall: 0.94572611
+F1 Score: 0.94655381
+Training Time: 276.1216 seconds
+Prediction Time: 0.1109 seconds
+Latency per sample: 0.00000091 seconds
+
+Classification Report: 
+                precision    recall  f1-score   support
+
+        Benign  0.95331486 0.93515401 0.94414711     47821
+     HTTPFlood  0.97418580 0.92635935 0.94967081     14014
+     ICMPFlood  0.31770833 1.00000000 0.48221344       122
+      SYNFlood  0.98717949 0.98137255 0.98426745      1020
+       SYNScan  0.99500250 0.99153386 0.99326515      2008
+   SlowrateDoS  0.82199199 0.96784031 0.88897377      7214
+TCPConnectScan  0.87293803 0.99441341 0.92972460      1969
+      UDPFlood  0.95717641 0.95236847 0.95476639     45789
+       UDPScan  0.98067633 0.99631902 0.98843579      1630
+
+      accuracy                      0.94572611    121587
+     macro avg  0.87335264 0.97170678 0.90171828    121587
+  weighted avg  0.94878298 0.94572611 0.94655381    121587
+
+
+==========================================================================================
+Experiment Run: 2026-01-10 14:29:55
+==========================================================================================
+Notes:
+
+- Preprocessing: Yeo-Johnson transform applied.
+- Feature Selection: Voting method with top 3 selectors.
+- Sampling: SMOTE used on the training set.
+- Fixed the problem of the feature selection function not having a random state parameter for reproducibility.
+
+Accuracy: 0.94572611
+Precision: 0.94878298
+Recall: 0.94572611
+F1 Score: 0.94655381
+Training Time: 177.5642 seconds
+Prediction Time: 0.0542 seconds
+Latency per sample: 0.00000045 seconds
+
+Classification Report: 
+                precision    recall  f1-score   support
+
+        Benign  0.95331486 0.93515401 0.94414711     47821
+     HTTPFlood  0.97418580 0.92635935 0.94967081     14014
+     ICMPFlood  0.31770833 1.00000000 0.48221344       122
+      SYNFlood  0.98717949 0.98137255 0.98426745      1020
+       SYNScan  0.99500250 0.99153386 0.99326515      2008
+   SlowrateDoS  0.82199199 0.96784031 0.88897377      7214
+TCPConnectScan  0.87293803 0.99441341 0.92972460      1969
+      UDPFlood  0.95717641 0.95236847 0.95476639     45789
+       UDPScan  0.98067633 0.99631902 0.98843579      1630
+
+      accuracy                      0.94572611    121587
+     macro avg  0.87335264 0.97170678 0.90171828    121587
+  weighted avg  0.94878298 0.94572611 0.94655381    121587
+
+

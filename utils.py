@@ -298,6 +298,7 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='mi
     
     # Visualize the class distribution to confirm stratification
     ax = dist_comparison.plot(kind='bar', figsize=(3.5, 3.5), width=0.8)
+    ax.set_axisbelow(True)
     ax.set_ylabel('Proportion', fontsize=12)
     ax.set_xlabel('Attack Type', fontsize=12)
     plt.xticks(rotation=90, ha='right')
@@ -434,16 +435,20 @@ def analyze_correlations(X, file_path=None, version='v1', threshold=0.95):
     """
     Plots the correlation matrix and identifies highly correlated features.
     """
-    plt.figure(figsize=(3.5, 3.5))
+    plt.figure(figsize=(4, 3.5))
     corr_matrix = X.corr()
     
     # Plot heatmap
     # Mask the upper triangle to make it easier to read
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-    sns.heatmap(corr_matrix, mask=mask, annot=False, cmap='coolwarm', center=0, square=True, linewidths=.5)
+    ax = sns.heatmap(corr_matrix, mask=mask, annot=False, cmap='coolwarm', center=0, square=True, linewidths=0.5, linecolor='gray', cbar=True)
+    
+    ax.grid(False)
+    plt.xticks(rotation=90, ha='center', fontsize=8, fontname='Times New Roman')
+    plt.yticks(fontsize=8, fontname='Times New Roman')
     
     if file_path:
-        plt.savefig(os.path.join(file_path, f"{version}_correlation_matrix.pdf"))
+        plt.savefig(os.path.join(file_path, f"{version}_correlation_matrix.pdf"), bbox_inches='tight')
     
     plt.show()
     plt.close()
@@ -466,6 +471,7 @@ def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, outp
     recall = recall_score(y_val, y_pred, average='weighted')
     f1 = f1_score(y_val, y_pred, average='weighted')
     classification_rep = classification_report(y_val, y_pred, target_names=output_encoder.classes_, digits=8)
+    cm = confusion_matrix(y_val, y_pred)
 
     print(f"Accuracy: {accuracy:.8f}")
     print(f"Precision: {precision:.8f}")
@@ -505,12 +511,12 @@ def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, outp
         f.write(f"Prediction Time: {prediction_time:.4f} seconds\n")
         f.write(f"Latency per sample: {prediction_time/len(y_val):.8f} seconds\n")
         f.write(f"\nClassification Report: \n{classification_rep}\n")
+        f.write(f"\nConfusion Matrix:\n{np.array2string(cm, separator=', ')}\n")
 
         # 3. Add a blank line at the end for spacing
         f.write("\n")
         
     # Plot confusion matrix
-    cm = confusion_matrix(y_val, y_pred)
     plt.figure(figsize=(4, 3.5))
     
     # IEEE Style Heatmap
