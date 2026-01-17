@@ -127,4 +127,9 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
     X_val_out = (X_val.values if hasattr(X_val, 'values') else X_val).astype(np.float32)
     X_test_out = (X_test.values if hasattr(X_test, 'values') else X_test).astype(np.float32)
     
+    print(f"\n[Preprocessing] Final dataset sizes (after {sampling_method}):")
+    print(f"  - Training samples: {len(y_resampled)}")
+    print(f"  - Validation samples: {len(y_val)}")
+    print(f"  - Test samples: {len(y_test)}")
+    
     return X_train_out, X_val_out, X_test_out, y_resampled, y_val, y_test

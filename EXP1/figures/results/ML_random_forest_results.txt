@@ -70,3 +70,231 @@ TCPConnectScan  0.99898322 0.99796851 0.99847561      1969
   weighted avg  0.97909322 0.97909316 0.97909311    121587
 
 
+==========================================================================================
+Experiment Run: 2026-01-15 02:04:46
+==========================================================================================
+Notes:
+
+- Preprocessing: Yeo-Johnson transform applied.
+- Feature Selection: Voting method with top 3 selectors.
+- Sampling: SMOTE used on the training set.
+- Fixed the problem of the feature selection function not having a random state parameter for reproducibility.
+
+Accuracy: 0.97909316
+Precision: 0.97909322
+Recall: 0.97909316
+F1 Score: 0.97909311
+Training Time: 29.2697 seconds
+Prediction Time: 0.0904 seconds
+Latency per sample: 0.00000074 seconds
+
+Classification Report: 
+                precision    recall  f1-score   support
+
+        Benign  0.97443515 0.97400724 0.97422114     47821
+     HTTPFlood  0.99743242 0.99793064 0.99768147     14014
+     ICMPFlood  1.00000000 1.00000000 1.00000000       122
+      SYNFlood  1.00000000 1.00000000 1.00000000      1020
+       SYNScan  0.99800598 0.99701195 0.99750872      2008
+   SlowrateDoS  0.99583796 0.99500970 0.99542366      7214
+TCPConnectScan  0.99898322 0.99796851 0.99847561      1969
+      UDPFlood  0.97288742 0.97331237 0.97309985     45789
+       UDPScan  0.99632803 0.99877301 0.99754902      1630
+
+      accuracy                      0.97909316    121587
+     macro avg  0.99265669 0.99266816 0.99266216    121587
+  weighted avg  0.97909322 0.97909316 0.97909311    121587
+
+
+Confusion Matrix:
+[[46578,     0,     0,     0,     0,     1,     0,  1242,     0],
+ [    0, 13985,     0,     0,     0,    29,     0,     0,     0],
+ [    0,     0,   122,     0,     0,     0,     0,     0,     0],
+ [    0,     0,     0,  1020,     0,     0,     0,     0,     0],
+ [    0,     0,     0,     0,  2002,     0,     2,     0,     4],
+ [    0,    36,     0,     0,     0,  7178,     0,     0,     0],
+ [    0,     0,     0,     0,     2,     0,  1965,     0,     2],
+ [ 1222,     0,     0,     0,     0,     0,     0, 44567,     0],
+ [    0,     0,     0,     0,     2,     0,     0,     0,  1628]]
+
+==========================================================================================
+Experiment Run: 2026-01-15 16:20:59
+==========================================================================================
+Notes:
+
+- Preprocessing: Yeo-Johnson transform applied.
+- Feature Selection: Voting method with top 3 selectors.
+- Sampling: SMOTE used on the training set.
+- Fixed the problem of the feature selection function not having a random state parameter for reproducibility.
+
+Accuracy: 0.97909316
+Precision: 0.97909322
+Recall: 0.97909316
+F1 Score: 0.97909311
+Training Time: 32.0233 seconds
+Prediction Time: 0.0930 seconds
+Latency per sample: 0.00000076 seconds
+
+Classification Report: 
+                precision    recall  f1-score   support
+
+        Benign  0.97443515 0.97400724 0.97422114     47821
+     HTTPFlood  0.99743242 0.99793064 0.99768147     14014
+     ICMPFlood  1.00000000 1.00000000 1.00000000       122
+      SYNFlood  1.00000000 1.00000000 1.00000000      1020
+       SYNScan  0.99800598 0.99701195 0.99750872      2008
+   SlowrateDoS  0.99583796 0.99500970 0.99542366      7214
+TCPConnectScan  0.99898322 0.99796851 0.99847561      1969
+      UDPFlood  0.97288742 0.97331237 0.97309985     45789
+       UDPScan  0.99632803 0.99877301 0.99754902      1630
+
+      accuracy                      0.97909316    121587
+     macro avg  0.99265669 0.99266816 0.99266216    121587
+  weighted avg  0.97909322 0.97909316 0.97909311    121587
+
+
+Confusion Matrix:
+[[46578,     0,     0,     0,     0,     1,     0,  1242,     0],
+ [    0, 13985,     0,     0,     0,    29,     0,     0,     0],
+ [    0,     0,   122,     0,     0,     0,     0,     0,     0],
+ [    0,     0,     0,  1020,     0,     0,     0,     0,     0],
+ [    0,     0,     0,     0,  2002,     0,     2,     0,     4],
+ [    0,    36,     0,     0,     0,  7178,     0,     0,     0],
+ [    0,     0,     0,     0,     2,     0,  1965,     0,     2],
+ [ 1222,     0,     0,     0,     0,     0,     0, 44567,     0],
+ [    0,     0,     0,     0,     2,     0,     0,     0,  1628]]
+
+==========================================================================================
+Experiment Run: 2026-01-15 20:21:14
+==========================================================================================
+Notes:
+
+- Preprocessing: Yeo-Johnson transform applied.
+- Feature Selection: Voting method with top 3 selectors.
+- Sampling: SMOTE used on the training set.
+- Fixed the problem of the feature selection function not having a random state parameter for reproducibility.
+
+Accuracy: 0.97909316
+Precision: 0.97909322
+Recall: 0.97909316
+F1 Score: 0.97909311
+Training Time: 33.5584 seconds
+Prediction Time: 0.0909 seconds
+Latency per sample: 0.00000075 seconds
+
+Classification Report: 
+                precision    recall  f1-score   support
+
+        Benign  0.97443515 0.97400724 0.97422114     47821
+     HTTPFlood  0.99743242 0.99793064 0.99768147     14014
+     ICMPFlood  1.00000000 1.00000000 1.00000000       122
+      SYNFlood  1.00000000 1.00000000 1.00000000      1020
+       SYNScan  0.99800598 0.99701195 0.99750872      2008
+   SlowrateDoS  0.99583796 0.99500970 0.99542366      7214
+TCPConnectScan  0.99898322 0.99796851 0.99847561      1969
+      UDPFlood  0.97288742 0.97331237 0.97309985     45789
+       UDPScan  0.99632803 0.99877301 0.99754902      1630
+
+      accuracy                      0.97909316    121587
+     macro avg  0.99265669 0.99266816 0.99266216    121587
+  weighted avg  0.97909322 0.97909316 0.97909311    121587
+
+
+Confusion Matrix:
+[[46578,     0,     0,     0,     0,     1,     0,  1242,     0],
+ [    0, 13985,     0,     0,     0,    29,     0,     0,     0],
+ [    0,     0,   122,     0,     0,     0,     0,     0,     0],
+ [    0,     0,     0,  1020,     0,     0,     0,     0,     0],
+ [    0,     0,     0,     0,  2002,     0,     2,     0,     4],
+ [    0,    36,     0,     0,     0,  7178,     0,     0,     0],
+ [    0,     0,     0,     0,     2,     0,  1965,     0,     2],
+ [ 1222,     0,     0,     0,     0,     0,     0, 44567,     0],
+ [    0,     0,     0,     0,     2,     0,     0,     0,  1628]]
+
+==========================================================================================
+Experiment Run: 2026-01-16 21:46:34
+==========================================================================================
+Notes:
+
+- Preprocessing: Yeo-Johnson transform applied.
+- Feature Selection: Voting method with top 3 selectors.
+- Sampling: SMOTE used on the training set.
+- Fixed the problem of the feature selection function not having a random state parameter for reproducibility.
+
+Accuracy: 0.96979118
+Precision: 0.96979084
+Recall: 0.96979118
+F1 Score: 0.96979096
+Training Time: 22.0612 seconds
+Prediction Time: 0.0994 seconds
+Latency per sample: 0.00000082 seconds
+
+Classification Report: 
+                precision    recall  f1-score   support
+
+        Benign  0.96261663 0.96223416 0.96242536     47821
+     HTTPFlood  0.99728978 0.99778793 0.99753879     14014
+     ICMPFlood  1.00000000 1.00000000 1.00000000       122
+      SYNFlood  1.00000000 1.00000000 1.00000000      1020
+       SYNScan  0.99750872 0.99701195 0.99726027      2008
+   SlowrateDoS  0.99569982 0.99500970 0.99535464      7214
+TCPConnectScan  0.99847561 0.99796851 0.99822200      1969
+      UDPFlood  0.96061651 0.96097316 0.96079480     45789
+       UDPScan  0.99693627 0.99815951 0.99754752      1630
+
+      accuracy                      0.96979118    121587
+     macro avg  0.98990482 0.98990499 0.98990482    121587
+  weighted avg  0.96979084 0.96979118 0.96979096    121587
+
+
+Confusion Matrix:
+[[46015,     2,     0,     0,     0,     0,     0,  1804,     0],
+ [    0, 13983,     0,     0,     0,    31,     0,     0,     0],
+ [    0,     0,   122,     0,     0,     0,     0,     0,     0],
+ [    0,     0,     0,  1020,     0,     0,     0,     0,     0],
+ [    0,     0,     0,     0,  2002,     0,     3,     0,     3],
+ [    0,    36,     0,     0,     0,  7178,     0,     0,     0],
+ [    0,     0,     0,     0,     2,     0,  1965,     0,     2],
+ [ 1787,     0,     0,     0,     0,     0,     0, 44002,     0],
+ [    0,     0,     0,     0,     3,     0,     0,     0,  1627]]
+
+==========================================================================================
+Experiment Run: 2026-01-16 23:40:47
+==========================================================================================
+Accuracy: 0.97915073
+Precision: 0.97915085
+Recall: 0.97915073
+F1 Score: 0.97915070
+Training Time: 23.2462 seconds
+Prediction Time: 0.1061 seconds
+Latency per sample: 0.00000087 seconds
+
+Classification Report: 
+                precision    recall  f1-score   support
+
+        Benign  0.97449791 0.97406997 0.97428389     47821
+     HTTPFlood  0.99743224 0.99785928 0.99764572     14014
+     ICMPFlood  1.00000000 1.00000000 1.00000000       122
+      SYNFlood  1.00000000 1.00000000 1.00000000      1020
+       SYNScan  0.99850374 0.99701195 0.99775729      2008
+   SlowrateDoS  0.99583854 0.99514832 0.99549331      7214
+TCPConnectScan  0.99898322 0.99796851 0.99847561      1969
+      UDPFlood  0.97297474 0.97339972 0.97318719     45789
+       UDPScan  0.99571865 0.99877301 0.99724349      1630
+
+      accuracy                      0.97915073    121587
+     macro avg  0.99266100 0.99269231 0.99267628    121587
+  weighted avg  0.97915085 0.97915073 0.97915070    121587
+
+
+Confusion Matrix:
+[[46581,     2,     0,     0,     0,     0,     0,  1238,     0],
+ [    0, 13984,     0,     0,     0,    30,     0,     0,     0],
+ [    0,     0,   122,     0,     0,     0,     0,     0,     0],
+ [    0,     0,     0,  1020,     0,     0,     0,     0,     0],
+ [    0,     0,     0,     0,  2002,     0,     2,     0,     4],
+ [    1,    34,     0,     0,     0,  7179,     0,     0,     0],
+ [    0,     0,     0,     0,     1,     0,  1965,     0,     3],
+ [ 1218,     0,     0,     0,     0,     0,     0, 44571,     0],
+ [    0,     0,     0,     0,     2,     0,     0,     0,  1628]]
+

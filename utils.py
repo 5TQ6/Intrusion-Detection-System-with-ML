@@ -66,167 +66,6 @@ def clear_memory(device=None):
             if hasattr(torch.mps, 'empty_cache'):
                 torch.mps.empty_cache()
 
-def explore_dataset(X, y=None, title="Dataset Exploration", save_path=None):
-    """
-    Analyzes the dataset to help choose preprocessing steps, including visualizations.
-    """
-    print(f"\n{'='*40}\n{title}\n{'='*40}")
-    
-    advice_list = []
-    
-    # 1. Dimensions and Types
-    print(f"Shape: {X.shape}")
-    print(f"Feature Types:\n{X.dtypes.value_counts()}")
-    
-    # 2. Missing Values
-    missing = X.isnull().sum()
-    missing_percent = (missing / len(X)) * 100
-    missing_table = pd.concat([missing, missing_percent], axis=1, keys=['Total', 'Percent'])
-    missing_table = missing_table[missing_table['Total'] > 0].sort_values('Total', ascending=False)
-    
-    if not missing_table.empty:
-        print(f"\n[Missing Values] Found in {len(missing_table)} features:")
-        print(missing_table.head())
-        advice_list.append("Missing Values: If <5%, drop rows. If >50%, drop column. Else, impute (Median for num, Mode for cat).")
-        
-        # Visualization: Missing Values
-        plt.figure(figsize=(3.5, 4.5))
-        sns.barplot(x=missing_table['Percent'][:20], y=missing_table.index[:20], color='#0072B2')
-        plt.xlabel('Percentage Missing')
-        plt.tight_layout()
-        if save_path:
-             if not os.path.exists(save_path): os.makedirs(save_path)
-             plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_missing.pdf"))
-        plt.show()
-        plt.close()
-    else:
-        print("\n[Missing Values] None found (Clean).")
-
-    # 3. Numerical Stats & Skewness
-    numeric_cols = X.select_dtypes(include=[np.number]).columns
-    if len(numeric_cols) > 0:
-        print(f"\n[Numerical Features] Summary of {len(numeric_cols)} features:")
-        # Check skewness
-        skew_vals = X[numeric_cols].skew().sort_values(ascending=False)
-        high_skew = skew_vals[abs(skew_vals) > 1]
-        
-        if not high_skew.empty:
-            print(f"  - High Skewness detected in {len(high_skew)} features (e.g., {high_skew.index[0]}: {high_skew.iloc[0]:.2f})")
-            
-            # Check for zero inflation (common cause of persistent skewness)
-            top_skewed = high_skew.index[0]
-            zero_pct = (X[top_skewed] == 0).mean() * 100
-            if zero_pct > 50:
-                 print(f"    -> Note: {top_skewed} is {zero_pct:.1f}% zeros. Transformations cannot fix skewness caused by mass zeros.")
-
-            advice_list.append("Skewness: Consider Log-transformation or PowerTransformer (Yeo-Johnson) for highly skewed features.")
-            
-            # Visualization: Distribution of top skewed feature
-            top_skewed = high_skew.index[0]
-            plt.figure(figsize=(3.5, 5))
-            plt.subplot(2, 1, 1)
-            sns.histplot(X[top_skewed], kde=True, bins=30, color='#0072B2')
-            
-            plt.subplot(2, 1, 2)
-            sns.boxplot(x=X[top_skewed], color='#56B4E9')
-            plt.tight_layout()
-            if save_path:
-                if not os.path.exists(save_path): os.makedirs(save_path)
-                plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_skewness.pdf"))
-            plt.show()
-            plt.close()
-        else:
-            print("  - Distributions look relatively symmetric.")
-            
-        # Check scales (Min/Max)
-        desc = X[numeric_cols].describe().T
-        max_range = desc['max'].max()
-        min_range = desc['min'].min()
-        print(f"  - Value Range: {min_range:.2f} to {max_range:.2f}")
-        if max_range > 1000 and min_range < 1:
-             advice_list.append("Scaling: Large scale differences detected. MinMaxScaler or StandardScaler is crucial.")
-
-        # Visualization: Correlation Matrix (if not too many features)
-        if len(numeric_cols) <= 50: # Limit to avoid clutter
-            plt.figure(figsize=(3.5, 3.5))
-            corr = X[numeric_cols].corr()
-            mask = np.triu(np.ones_like(corr, dtype=bool))
-            sns.heatmap(corr, mask=mask, annot=False, cmap='coolwarm', center=0, square=True, linewidths=.5)
-            plt.tight_layout()
-            if save_path:
-                if not os.path.exists(save_path): os.makedirs(save_path)
-                plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_correlation.pdf"))
-            plt.show()
-            plt.close()
-        else:
-            print(f"  - Skipping correlation plot (too many features: {len(numeric_cols)}).")
-
-    # 4. Categorical Cardinality
-    cat_cols = X.select_dtypes(include=['object', 'category']).columns
-    if len(cat_cols) > 0:
-        print(f"\n[Categorical Features] Summary of {len(cat_cols)} features:")
-        high_cardinality = []
-        for col in cat_cols:
-            unique_count = X[col].nunique()
-            if unique_count > 20:
-                high_cardinality.append(col)
-        
-        if high_cardinality:
-            print(f"  - High Cardinality (>20 categories) in: {high_cardinality}")
-            advice_list.append("Encoding: Avoid One-Hot Encoding for high cardinality features. Use Label Encoding or Target Encoding.")
-        else:
-            print("  - Low cardinality. One-Hot Encoding is safe.")
-            
-        # Visualization: Top categories for first categorical column
-        if len(cat_cols) > 0:
-            col = cat_cols[0]
-            top_cats = X[col].value_counts().head(10)
-            plt.figure(figsize=(3.5, 3.5))
-            sns.barplot(x=top_cats.values, y=top_cats.index, color='#0072B2')
-            plt.tight_layout()
-            if save_path:
-                if not os.path.exists(save_path): os.makedirs(save_path)
-                plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_categorical.pdf"))
-            plt.show()
-            plt.close()
-
-    # 5. Class Balance
-    if y is not None:
-        print("\n[Target Variable]")
-        if isinstance(y, pd.Series):
-            y_series = y
-        else:
-            y_series = pd.Series(y)
-            
-        counts = y_series.value_counts(normalize=True)
-        print(counts)
-        
-        # Visualization: Class Balance
-        plt.figure(figsize=(3.5, 3.5))
-        sns.countplot(x=y_series, color='#0072B2')
-        plt.xlabel('Class')
-        plt.ylabel('Count')
-        plt.xticks(rotation=45, ha='right')
-        plt.tight_layout()
-        if save_path:
-            if not os.path.exists(save_path): os.makedirs(save_path)
-            plt.savefig(os.path.join(save_path, f"{title.replace(' ', '_')}_target_dist.pdf"))
-        plt.show()
-        plt.close()
-
-        if counts.min() < 0.05:
-            advice_list.append("Class Imbalance: Severe imbalance detected (<5%). Use SMOTE, ADASYN, or Class Weights.")
-
-    # Summary of Advice
-    print(f"\n{'='*40}\nSUMMARY OF ADVICE\n{'='*40}")
-    if not advice_list:
-        print("Dataset looks clean and balanced. Standard preprocessing should suffice.")
-    else:
-        for i, advice in enumerate(advice_list, 1):
-            print(f"{i}. {advice}")
-            
-    print(f"{'='*40}\n")
-
 def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='minmax', fix_skewness=False, split_ratios=(0.8, 0.9)):
     # low_memory=false handles mixed types
     df = pd.read_csv(db_path, low_memory=False)
@@ -261,6 +100,8 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='mi
     X = df.drop(columns=existing_drop_cols, axis=1)
     y = df['Attack Type']
     
+    print("\n[Dataset Info] Attack Type Distribution (Counts):")
+    print(y.value_counts())
     print(f"[Preprocessing] Final feature set ({len(X.columns)}): {list(X.columns)}")
     
     del df
@@ -686,6 +527,7 @@ def perform_filter_feature_selection(X_train, y_train, n_features_to_select=20, 
             print(f"[Filter] Completed in {elapsed_time:.2f} seconds.")
             print(f"[Filter] Selected Features: {selected_features}")
             return selected_features
+        
     elif method == 'variance':
         # VarianceThreshold doesn't take k, so we find the threshold manually
         variances = X_train.var()
@@ -763,53 +605,85 @@ def perform_wrapper_feature_selection(X_train, y_train, n_features_to_select=20,
         selected_features = X_train.columns[sfs.get_support()].tolist()
         
     elif method == 'stepwise':
-        # Simplified Stepwise: Forward selection but check if removal helps (simulated)
-        # Scikit-learn doesn't support true stepwise, using Forward as proxy or custom loop
-        # For this comparison, we will use Forward selection as a baseline for stepwise behavior
-        sfs = SequentialFeatureSelector(estimator, n_features_to_select=n_features_to_select, direction='forward', cv=2, n_jobs=-1)
-        sfs.fit(X_train, y_train)
-        selected_features = X_train.columns[sfs.get_support()].tolist()
+            # FIX: Use mlxtend for true Stepwise (Floating Forward) Selection
+            from mlxtend.feature_selection import SequentialFeatureSelector as SFS
+            
+            # floating=True turns on "Stepwise" (Forward add, then conditional remove)
+            sfs = SFS(estimator, 
+                    k_features=n_features_to_select, 
+                    forward=True, 
+                    floating=True,  # <--- This makes it Stepwise
+                    scoring='accuracy',
+                    cv=2,
+                    n_jobs=-1)
+            
+            sfs = sfs.fit(X_train, y_train)
+            selected_features = list(sfs.k_feature_names_)
         
     elif method == 'genetic':
-        # Simplified Genetic Algorithm
-        population_size = 10
-        generations = 3
-        n_features = X_train.shape[1]
-        population = [np.random.choice([0, 1], size=n_features, p=[0.8, 0.2]) for _ in range(population_size)]
-        
-        best_score = 0
-        best_mask = population[0]
-        
-        for gen in range(generations):
-            scores = []
-            for individual in population:
-                cols = [i for i, x in enumerate(individual) if x == 1]
-                if len(cols) == 0: scores.append(0); continue
-                estimator.fit(X_train.iloc[:, cols], y_train)
-                scores.append(estimator.score(X_train.iloc[:, cols], y_train))
+            # UPGRADE: Parameters increased for scientific validity
+            population_size = 50  # Was 10 (Too small)
+            generations = 20      # Was 3 (Too short)
+            mutation_rate = 0.1
             
-            # Selection & Crossover (Simplified)
-            sorted_idx = np.argsort(scores)[::-1]
-            best_mask = population[sorted_idx[0]]
-            best_score = scores[sorted_idx[0]]
+            n_features = X_train.shape[1]
+            # Initialize random population
+            population = [np.random.choice([0, 1], size=n_features, p=[0.8, 0.2]) for _ in range(population_size)]
             
-            # Next gen: keep top 2, crossover rest
-            new_pop = [population[i] for i in sorted_idx[:2]]
-            while len(new_pop) < population_size:
-                p1, p2 = population[np.random.choice(sorted_idx[:5])], population[np.random.choice(sorted_idx[:5])]
-                cut = np.random.randint(0, n_features)
-                child = np.concatenate([p1[:cut], p2[cut:]])
-                # Mutation
-                if np.random.rand() < 0.1:
-                    m_idx = np.random.randint(0, n_features)
-                    child[m_idx] = 1 - child[m_idx]
-                new_pop.append(child)
-            population = new_pop
+            best_score = 0
+            best_mask = population[0]
             
-        selected_indices = [i for i, x in enumerate(best_mask) if x == 1]
-        # Limit to n_features_to_select
-        selected_features = X_train.columns[selected_indices[:n_features_to_select]].tolist()
-        
+            for gen in range(generations):
+                scores = []
+                for individual in population:
+                    cols = [i for i, x in enumerate(individual) if x == 1]
+                    if len(cols) == 0: 
+                        scores.append(0)
+                        continue
+                    
+                    # Check to prevent errors if 0 features selected
+                    X_subset = X_train.iloc[:, cols]
+                    estimator.fit(X_subset, y_train)
+                    scores.append(estimator.score(X_subset, y_train))
+                
+                # Elitism: Keep best 2
+                sorted_idx = np.argsort(scores)[::-1]
+                best_gen_score = scores[sorted_idx[0]]
+                
+                # Track global best
+                if best_gen_score > best_score:
+                    best_score = best_gen_score
+                    best_mask = population[sorted_idx[0]]
+                
+                # Simple Tournament Selection & Crossover
+                new_pop = [population[i] for i in sorted_idx[:2]] # Keep top 2
+                
+                while len(new_pop) < population_size:
+                    # Tournament size 3
+                    parents = []
+                    for _ in range(2):
+                        candidates = np.random.choice(len(population), 3, replace=False)
+                        parent_idx = candidates[np.argmax([scores[i] for i in candidates])]
+                        parents.append(population[parent_idx])
+                    
+                    p1, p2 = parents
+                    cut = np.random.randint(0, n_features)
+                    child = np.concatenate([p1[:cut], p2[cut:]])
+                    
+                    # Mutation
+                    if np.random.rand() < mutation_rate:
+                        m_idx = np.random.randint(0, n_features)
+                        child[m_idx] = 1 - child[m_idx]
+                    new_pop.append(child)
+                population = new_pop
+                
+            selected_indices = [i for i, x in enumerate(best_mask) if x == 1]
+            # Safety check: if GA selected too many, take top N based on single-feature importance or just truncate
+            if len(selected_indices) > n_features_to_select:
+                selected_indices = selected_indices[:n_features_to_select]
+                
+            selected_features = X_train.columns[selected_indices].tolist()
+
     elif method == 'annealing':
         # Simplified Simulated Annealing
         current_mask = np.zeros(X_train.shape[1])
@@ -869,7 +743,7 @@ def perform_embedded_feature_selection(X_train, y_train, n_features_to_select=20
 
     if method == 'lasso':
         # L1 Regularization
-        model = LogisticRegression(penalty='l1', solver='liblinear', C=0.1, random_state=42, max_iter=10000)
+        model = LogisticRegression(penalty='l1', solver='saga', C=0.1, random_state=42, max_iter=10000)
     elif method == 'ridge':
         # L2 Regularization (Ridge) - selects based on coef magnitude
         model = LogisticRegression(penalty='l2', solver='lbfgs', C=0.1, random_state=42, max_iter=10000)
@@ -1057,6 +931,41 @@ def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=
     if file_path:
         plot_feature_selection_comparison(sorted_results, file_path, version)
     
+    # --- Debugging/Verification Block ---
+    print(f"\n{'='*40}\n[Debugging] Feature Selection Verification\n{'='*40}")
+    
+    # 1. Print Feature Lists for Top 5
+    debug_top_k = 5
+    top_methods_debug = list(sorted_results.keys())[:debug_top_k]
+    
+    for i, method in enumerate(top_methods_debug):
+        feats = feature_sets[method]
+        print(f"\nRank {i+1}: {method} (Acc: {sorted_results[method]:.4f})")
+        print(f"  Features: {feats}")
+
+    # 2. Check for Identity & 3. Calculate Overlap
+    if len(top_methods_debug) >= 2:
+        best_method = top_methods_debug[0]
+        best_feats = set(feature_sets[best_method])
+        
+        print(f"\n[Comparison] Comparing against Rank 1 ({best_method}):")
+        
+        for i in range(1, len(top_methods_debug)):
+            current_method = top_methods_debug[i]
+            current_feats = set(feature_sets[current_method])
+            
+            if best_feats == current_feats:
+                print(f"  - Rank {i+1} ({current_method}) selected the EXACT same features as Rank 1.")
+            else:
+                # Jaccard Index
+                intersection = len(best_feats.intersection(current_feats))
+                union = len(best_feats.union(current_feats))
+                jaccard = intersection / union if union > 0 else 0
+                print(f"  - Rank {i+1} ({current_method}) overlap: {intersection} common features (Jaccard: {jaccard:.2%})")
+    
+    print(f"{'='*40}\n")
+    # --- End Debugging Block ---
+
     print(f"\n{'='*40}\nStarting Voting Feature Selection (Top {top_k} Methods)\n{'='*40}")
     
     # Get top k methods
