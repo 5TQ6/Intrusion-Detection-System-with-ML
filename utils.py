@@ -66,7 +66,7 @@ def clear_memory(device=None):
             if hasattr(torch.mps, 'empty_cache'):
                 torch.mps.empty_cache()
 
-def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='minmax', fix_skewness=False, split_ratios=(0.8, 0.9)):
+def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='standard', fix_skewness=False, split_ratios=(0.8, 0.9)):
     # low_memory=false handles mixed types
     df = pd.read_csv(db_path, low_memory=False)
 
@@ -307,6 +307,12 @@ def analyze_correlations(X, file_path=None, version='v1', threshold=0.95):
     return to_drop
 
 def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, output_encoder, file_path, version, results_file_name, cm_title, notes=""):
+    # Ensure inputs are numpy arrays (handle DataFrames/Series)
+    if hasattr(y_val, 'values'):
+        y_val = y_val.values
+    if hasattr(y_pred, 'values'):
+        y_pred = y_pred.values
+
     accuracy = accuracy_score(y_val, y_pred)
     precision = precision_score(y_val, y_pred, average='weighted')
     recall = recall_score(y_val, y_pred, average='weighted')
@@ -383,6 +389,12 @@ def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, outp
     return accuracy, precision, recall, f1
 
 def create_dataloaders(X_train, y_train, X_val, y_val, batch_size=128):
+    # Ensure inputs are numpy arrays (handle DataFrames)
+    if hasattr(X_train, 'values'):
+        X_train = X_train.values
+    if hasattr(X_val, 'values'):
+        X_val = X_val.values
+
     # Reshape to (N, 1, F) for consistency across LSTM, GRU, CNN
     X_train_reshaped = X_train.reshape((X_train.shape[0], 1, X_train.shape[1]))
     X_val_reshaped = X_val.reshape((X_val.shape[0], 1, X_val.shape[1]))
@@ -404,7 +416,7 @@ def train_and_evaluate_pytorch_model(model, train_loader, val_loader, num_epochs
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters())
-    
+
     # Determine device type for AMP (Automatic Mixed Precision)
     if isinstance(device, str):
         device_type = device.split(':')[0]

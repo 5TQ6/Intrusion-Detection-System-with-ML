@@ -5,12 +5,6 @@ from imblearn.over_sampling import SMOTE, ADASYN
 from imblearn.under_sampling import RandomUnderSampler
 from utils import print_memory_usage
 
-import matplotlib.pyplot as plt
-import numpy as np
-import os
-from imblearn.over_sampling import SMOTE, ADASYN
-from imblearn.under_sampling import RandomUnderSampler
-
 def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder, file_path, version, sampling_method='smote', plot_distributions=True):
     
     # --- GLOBAL IEEE STYLE SETTINGS ---
@@ -126,6 +120,11 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
     X_train_out = (X_resampled.values if hasattr(X_resampled, 'values') else X_resampled).astype(np.float32)
     X_val_out = (X_val.values if hasattr(X_val, 'values') else X_val).astype(np.float32)
     X_test_out = (X_test.values if hasattr(X_test, 'values') else X_test).astype(np.float32)
+
+    # Ensure targets are numpy arrays
+    y_resampled = y_resampled.values if hasattr(y_resampled, 'values') else y_resampled
+    y_val = y_val.values if hasattr(y_val, 'values') else y_val
+    y_test = y_test.values if hasattr(y_test, 'values') else y_test
     
     print(f"\n[Preprocessing] Final dataset sizes (after {sampling_method}):")
     print(f"  - Training samples: {len(y_resampled)}")
