@@ -17,6 +17,7 @@ from sklearn.feature_selection import RFE, SelectKBest, f_classif, mutual_info_c
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import MinMaxScaler, PowerTransformer, StandardScaler
 from collections import Counter
@@ -822,8 +823,8 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
 
     print(f"\n{'='*40}\nComparing Feature Selection Methods\n{'='*40}")
     
-    # Use a simple Random Forest for evaluation
-    eval_model = RandomForestClassifier(n_estimators=50, random_state=42, n_jobs=-1)
+    # Use MLP for evaluation
+    eval_model = MLPClassifier(hidden_layer_sizes=(64, 32), random_state=random_state, max_iter=300, early_stopping=True, solver='adam', activation='relu',verbose=True)
 
     # --- Filter Methods ---
     filter_methods = ['pearson', 'anova', 'chi2', 'mutual_info', 'variance', 'fisher']
@@ -1010,87 +1011,6 @@ def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=
     
     # Return both the selected features and the results for analysis/plotting
     return voting_features, sorted_results
-
-def perform_lda_reduction(X_train, y_train, X_val, X_test):
-    """
-    Performs Linear Discriminant Analysis (LDA) for dimensionality reduction.
-    LDA is supervised and maximizes class separability.
-    """
-    print(f"\n[Dimensionality Reduction] Starting LDA...")
-    start_time = time.time()
-    
-    # LDA components are limited to min(n_features, n_classes - 1)
-    n_classes = len(np.unique(y_train))
-    n_components = min(X_train.shape[1], n_classes - 1)
-    
-    lda = LinearDiscriminantAnalysis(n_components=n_components)
-    X_train_lda = lda.fit_transform(X_train, y_train)
-    X_val_lda = lda.transform(X_val)
-    X_test_lda = lda.transform(X_test)
-    
-    elapsed_time = time.time() - start_time
-    print(f"[LDA] Reduced features from {X_train.shape[1]} to {n_components} components.")
-    print(f"[LDA] Completed in {elapsed_time:.2f} seconds.")
-    
-    return X_train_lda, X_val_lda, X_test_lda
-
-class Autoencoder(nn.Module):
-    def __init__(self, input_dim, encoding_dim):
-        super(Autoencoder, self).__init__()
-        self.encoder = nn.Sequential(
-            nn.Linear(input_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, encoding_dim),
-            nn.ReLU() # Encoded representation
-        )
-        self.decoder = nn.Sequential(
-            nn.Linear(encoding_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, input_dim)
-            # No activation here because inputs are StandardScaled (can be negative)
-        )
-
-    def forward(self, x):
-        encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
-        return encoded, decoded
-
-def perform_autoencoder_reduction(X_train, X_val, X_test, encoding_dim=20, epochs=10, batch_size=256, device='cpu'):
-    """
-    Performs dimensionality reduction using a PyTorch Autoencoder.
-    """
-    print(f"\n[Dimensionality Reduction] Starting Autoencoder (Target: {encoding_dim} features)...")
-    start_time = time.time()
-    
-    # Convert to tensors
-    train_tensor = torch.tensor(X_train.values, dtype=torch.float32).to(device)
-    val_tensor = torch.tensor(X_val.values, dtype=torch.float32).to(device)
-    test_tensor = torch.tensor(X_test.values, dtype=torch.float32).to(device)
-    
-    model = Autoencoder(input_dim=X_train.shape[1], encoding_dim=encoding_dim).to(device)
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-    
-    # Train Autoencoder
-    for epoch in range(epochs):
-        model.train()
-        optimizer.zero_grad()
-        _, decoded = model(train_tensor)
-        loss = criterion(decoded, train_tensor)
-        loss.backward()
-        optimizer.step()
-        
-    # Extract encoded features
-    model.eval()
-    with torch.no_grad():
-        X_train_enc, _ = model(train_tensor)
-        X_val_enc, _ = model(val_tensor)
-        X_test_enc, _ = model(test_tensor)
-        
-    elapsed_time = time.time() - start_time
-    print(f"[Autoencoder] Completed in {elapsed_time:.2f} seconds.")
-    
-    return X_train_enc.cpu().numpy(), X_val_enc.cpu().numpy(), X_test_enc.cpu().numpy()
 
 def log_metrics(model_results, model_name, accuracy, precision, recall, f1, train_time, pred_time):
     """
