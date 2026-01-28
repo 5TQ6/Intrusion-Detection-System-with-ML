@@ -20,6 +20,10 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import MinMaxScaler, PowerTransformer, StandardScaler
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
+from sklearn.decomposition import PCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from imblearn.over_sampling import SMOTE, ADASYN, BorderlineSMOTE
+from imblearn.under_sampling import RandomUnderSampler
 
 
 def apply_ieee_style():
@@ -45,27 +49,6 @@ def apply_ieee_style():
     })
 
 apply_ieee_style()
-
-def print_memory_usage(step=""):
-    try:
-        import psutil
-        process = psutil.Process(os.getpid())
-        mem = process.memory_info().rss / 1024 ** 2
-        print(f"[Memory] {step}: {mem:.2f} MB")
-    except ImportError:
-        print("[Memory] psutil not installed. Run 'pip install psutil' to monitor memory.")
-
-def clear_memory(device=None):
-    """Forcibly clears system memory and PyTorch cache (CUDA/MPS)."""
-    gc.collect()
-    if device:
-        device_type = device.split(':')[0] if isinstance(device, str) else device.type
-        if device_type == 'cuda':
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-        elif device_type == 'mps':
-            if hasattr(torch.mps, 'empty_cache'):
-                torch.mps.empty_cache()
 
 def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='standard', fix_skewness=False, split_ratios=(0.8, 0.9)):
     # low_memory=false handles mixed types
@@ -273,121 +256,133 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='st
 
     return X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
 
-def analyze_correlations(X, file_path=None, version='v1', threshold=0.95):
-    """
-    Plots the correlation matrix and identifies highly correlated features.
-    """
-    plt.figure(figsize=(4, 3.5))
-    corr_matrix = X.corr()
+def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder, file_path, version, sampling_method='smote', plot_distributions=True):
     
-    # Plot heatmap
-    # Mask the upper triangle to make it easier to read
-    mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-    ax = sns.heatmap(corr_matrix, mask=mask, annot=False, cmap='coolwarm', center=0, square=True, linewidths=0.5, linecolor='gray', cbar=True)
-    
-    ax.grid(False)
-    plt.xticks(rotation=90, ha='center', fontsize=8, fontname='Times New Roman')
-    plt.yticks(fontsize=8, fontname='Times New Roman')
-    
-    if file_path:
-        plt.savefig(os.path.join(file_path, f"{version}_correlation_matrix.pdf"), bbox_inches='tight')
-    
-    plt.show()
-    plt.close()
-    
-    # Identify collinear features
-    corr_abs = corr_matrix.abs()
-    upper = corr_abs.where(np.triu(np.ones(corr_abs.shape), k=1).astype(bool))
-    to_drop = [column for column in upper.columns if any(upper[column] > threshold)]
-    
-    print(f"\n[Analysis] Features with correlation > {threshold}:")
-    for col in to_drop:
-        correlated_cols = upper.index[upper[col] > threshold].tolist()
-        print(f"  - {col} is correlated with {correlated_cols}")
+    # --- GLOBAL IEEE STYLE SETTINGS ---
+    # Apply this once so all charts look professional
+    plt.rcParams.update({
+        "font.family": "serif",
+        "font.serif": ["Times New Roman"],
+        "font.size": 10,
+        "axes.labelsize": 10,
+        "legend.fontsize": 8,
+        "xtick.labelsize": 8,
+        "ytick.labelsize": 8,
+        "figure.figsize": (3.5, 3.0) # Matches IEEE Column Width
+    })
+
+    ## 1. Data Balance Plotting (Before Sampling)
+    if plot_distributions:
+        label_frequencies = []
+        labels = []
+        for attack in np.unique(y_train):
+            frequency = len(y_train[y_train == attack])
+            label_frequencies.append(frequency)
+            labels.append(str(output_encoder.inverse_transform(np.expand_dims(np.array(attack), axis = 0))[0]))
         
-    return to_drop
-
-def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, output_encoder, file_path, version, results_file_name, cm_title, notes=""):
-    # Ensure inputs are numpy arrays (handle DataFrames/Series)
-    if hasattr(y_val, 'values'):
-        y_val = y_val.values
-    if hasattr(y_pred, 'values'):
-        y_pred = y_pred.values
-
-    accuracy = accuracy_score(y_val, y_pred)
-    precision = precision_score(y_val, y_pred, average='weighted', zero_division=0)
-    recall = recall_score(y_val, y_pred, average='weighted', zero_division=0)
-    f1 = f1_score(y_val, y_pred, average='weighted', zero_division=0)
-    classification_rep = classification_report(y_val, y_pred, target_names=output_encoder.classes_, digits=8, zero_division=0)
-    cm = confusion_matrix(y_val, y_pred)
-
-    print(f"Accuracy: {accuracy:.8f}")
-    print(f"Precision: {precision:.8f}")
-    print(f"Recall: {recall:.8f}")
-    print(f"F1 Score: {f1:.8f}")
-    print(f"Training Time: {training_time:.4f} seconds")
-    print(f"Prediction Time: {prediction_time:.4f} seconds")
-    print(f"latency per sample: {prediction_time/len(y_val):.8f} seconds")
-    print(f"\nClassification Report: \n{classification_rep}")
-
-    # Get current time for the log
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    timestamp_safe = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    
-    if not os.path.exists(file_path):
-        os.makedirs(file_path)
-
-    full_path = os.path.join(file_path, version + '_' + results_file_name)
-
-    # 'a' mode creates the file if missing, appends if present
-    with open(full_path, 'a') as f:
-        # 1. Add a separator and Timestamp so you know WHEN this run happened
-        f.write(f"{'='*90}\n")
-        f.write(f"Experiment Run: {timestamp}\n")
-        f.write(f"{'='*90}\n")
+        sorted_indices = np.argsort(label_frequencies)[::-1]
+        label_frequencies = [label_frequencies[i] for i in sorted_indices]
+        labels = [labels[i] for i in sorted_indices]
         
-        # Add notes section
-        if notes:
-            f.write(f"Notes:\n{notes}\n\n")
-
-        # 2. Write your metrics
-        f.write(f"Accuracy: {accuracy:.8f}\n")
-        f.write(f"Precision: {precision:.8f}\n")
-        f.write(f"Recall: {recall:.8f}\n")
-        f.write(f"F1 Score: {f1:.8f}\n")
-        f.write(f"Training Time: {training_time:.4f} seconds\n")
-        f.write(f"Prediction Time: {prediction_time:.4f} seconds\n")
-        f.write(f"Latency per sample: {prediction_time/len(y_val):.8f} seconds\n")
-        f.write(f"\nClassification Report: \n{classification_rep}\n")
-        f.write(f"\nConfusion Matrix:\n{np.array2string(cm, separator=', ')}\n")
-
-        # 3. Add a blank line at the end for spacing
-        f.write("\n")
+        # Create Plot
+        fig, ax = plt.subplots() # Use fig, ax for better control
         
-    # Plot confusion matrix
-    plt.figure(figsize=(4, 3.5))
-    
-    # IEEE Style Heatmap
-    ax = sns.heatmap(cm, annot=True, fmt='d', cbar=True, cmap='Blues',
-                xticklabels=output_encoder.classes_, yticklabels=output_encoder.classes_,
-                annot_kws={"size": 6}, linewidths=0.5, linecolor='gray')
-    
-    # Explicitly remove grid (crucial for heatmaps when global grid is on)
-    ax.grid(False)
-    
-    plt.xlabel('Predicted Class', fontsize=10, fontname='Times New Roman')
-    plt.ylabel('True Class', fontsize=10, fontname='Times New Roman')
-    plt.xticks(rotation=90, ha='center', fontsize=8, fontname='Times New Roman')
-    plt.yticks(fontsize=8, fontname='Times New Roman')
-    
-    # Save confusion matrix plot
-    # Use timestamp to prevent overwriting and include model identifier from results filename
-    model_id = os.path.splitext(results_file_name)[0]
-    plt.savefig(os.path.join(file_path, f"{version}_{model_id}_{timestamp_safe}_confusion_matrix.pdf"), format='pdf', bbox_inches='tight')
-    plt.show()
-    plt.close()
+        # CRITICAL FIX: Send Grid to Background
+        ax.set_axisbelow(True) 
+        ax.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7)
+        
+        # Plot Bars
+        ax.bar(x=labels, height=label_frequencies, color='#0072B2')
+        
+        # Styling
+        ax.set_xlabel('Attack Types')
+        ax.set_ylabel('Frequency')
+        plt.xticks(rotation=90, ha='center') # Vertical labels
+        
+        # Clean Spines
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        
+        # Save
+        plt.tight_layout()
+        plt.savefig(os.path.join(file_path, version + '_' + 'attack_type_distribution.pdf'), format='pdf', bbox_inches='tight')
+        plt.show()
+        plt.close()
 
-    return accuracy, precision, recall, f1
+    ## Sampling Logic
+    # (Assuming print_memory_usage is defined elsewhere in your code)
+    # print_memory_usage(f"Before Sampling ({sampling_method})") 
+    
+    if sampling_method == 'smote':
+        sampler = BorderlineSMOTE(random_state=42, kind='borderline-1')
+    elif sampling_method == 'adasyn':
+        sampler = ADASYN(random_state=42)
+    elif sampling_method == 'undersample':
+        sampler = RandomUnderSampler(random_state=42)
+    else:
+        sampler = None
+
+    if sampler:
+        X_resampled, y_resampled = sampler.fit_resample(X_train, y_train)
+        # print_memory_usage(f"After Sampling ({sampling_method})")
+    else:
+        X_resampled, y_resampled = X_train, y_train
+        # print_memory_usage("No Sampling applied")
+
+    ## 2. Data Balance Plotting (After Sampling)
+    if plot_distributions and sampler:
+        label_frequencies = []
+        labels = []
+        for attack in np.unique(y_resampled):
+            frequency = len(y_resampled[y_resampled == attack])
+            label_frequencies.append(frequency)
+            labels.append(str(output_encoder.inverse_transform(np.expand_dims(np.array(attack), axis = 0))[0]))
+        
+        sorted_indices = np.argsort(label_frequencies)[::-1]
+        label_frequencies = [label_frequencies[i] for i in sorted_indices]
+        labels = [labels[i] for i in sorted_indices]
+        
+        # Create Plot
+        fig, ax = plt.subplots()
+        
+        # CRITICAL FIX: Send Grid to Background
+        ax.set_axisbelow(True)
+        ax.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7)
+        
+        # Plot Bars
+        ax.bar(x=labels, height=label_frequencies, color='#0072B2')
+        
+        # Styling
+        ax.set_xlabel('Attack Types')
+        ax.set_ylabel('Frequency')
+        plt.xticks(rotation=90, ha='center')
+        
+        # Clean Spines
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        
+        # Save
+        plt.tight_layout()
+        plt.savefig(os.path.join(file_path, version + '_' + f'attack_type_distribution_with_{sampling_method}.pdf'), format='pdf', bbox_inches='tight')
+        plt.show()
+        plt.close()
+
+    # Return numpy arrays
+    X_train_out = (X_resampled.values if hasattr(X_resampled, 'values') else X_resampled).astype(np.float32)
+    X_val_out = (X_val.values if hasattr(X_val, 'values') else X_val).astype(np.float32)
+    X_test_out = (X_test.values if hasattr(X_test, 'values') else X_test).astype(np.float32)
+
+    # Ensure targets are numpy arrays
+    y_resampled = y_resampled.values if hasattr(y_resampled, 'values') else y_resampled
+    y_val = y_val.values if hasattr(y_val, 'values') else y_val
+    y_test = y_test.values if hasattr(y_test, 'values') else y_test
+    
+    print(f"\n[Preprocessing] Final dataset sizes (after {sampling_method}):")
+    print(f"  - Training samples: {len(y_resampled)}")
+    print(f"  - Validation samples: {len(y_val)}")
+    print(f"  - Test samples: {len(y_test)}")
+    
+    return X_train_out, X_val_out, X_test_out, y_resampled, y_val, y_test
 
 def create_dataloaders(X_train, y_train, X_val, y_val, batch_size=128):
     # Ensure inputs are numpy arrays (handle DataFrames)
@@ -795,8 +790,39 @@ def perform_embedded_feature_selection(X_train, y_train, n_features_to_select=20
     print(f"[Embedded] Completed in {elapsed_time:.2f} seconds.")
     print(f"[Embedded] Selected Features: {selected_features}")
     return selected_features, elapsed_time
-# --------------------------------------------------------------------------------------
-# The following functions are implemented inside the (perform_voting_feature_selection) function
+
+def perform_transformation_feature_selection(X_fit, y_fit, X_train, X_val, n_components=0.95, method='pca'):
+    """
+    Performs feature transformation (PCA, LDA).
+    Returns transformed X_train and X_val (as numpy arrays) and execution time.
+    """
+    print(f"\n[Transformation] Starting {method.upper()} to reduce to {n_components} components...")
+    start_time = time.time()
+    
+    if method == 'pca':
+        model = PCA(n_components=n_components)
+    elif method == 'lda':
+        n_classes = len(np.unique(y_fit))
+        # LDA components cannot exceed n_classes - 1
+        actual_components = min(n_components, n_classes - 1)
+        if actual_components < 1:
+            actual_components = 1
+        if actual_components < n_components:
+            print(f"[Transformation] LDA limited to {actual_components} components (n_classes - 1).")
+        model = LinearDiscriminantAnalysis(n_components=actual_components)
+    else:
+        raise ValueError(f"Unknown transformation method: {method}")
+    
+    model.fit(X_fit, y_fit)
+    X_train_trans = model.transform(X_train)
+    X_val_trans = model.transform(X_val)
+    
+    elapsed_time = time.time() - start_time
+    print(f"[Transformation] Completed in {elapsed_time:.2f} seconds.")
+    
+    return X_train_trans, X_val_trans, elapsed_time
+
+# The following function are implemented inside the (perform_voting_feature_selection) function
 def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, random_state=42):
     """
     Runs multiple feature selection methods on a sample of data and evaluates them.
@@ -865,6 +891,24 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
         execution_times[f'Embedded ({method})'] = exec_time
         print(f"   -> Validation Accuracy: {acc:.4f}")
 
+    # --- Transformation Methods ---
+    transformation_methods = ['pca', 'lda']
+    for method in transformation_methods:
+        print(f"\n--- Transformation Method: {method} ---")
+        try:
+            X_train_trans, X_val_trans, exec_time = perform_transformation_feature_selection(
+                X_sel, y_sel, X_train, X_val, n_components=n_features, method=method
+            )
+            eval_model.fit(X_train_trans, y_train)
+            acc = eval_model.score(X_val_trans, y_val)
+            results[f'Transformation ({method})'] = acc
+            # Use dummy feature names for compatibility with the rest of the pipeline
+            feature_sets[f'Transformation ({method})'] = [f"{method.upper()}_{i}" for i in range(X_train_trans.shape[1])]
+            execution_times[f'Transformation ({method})'] = exec_time
+            print(f"   -> Validation Accuracy: {acc:.4f}")
+        except Exception as e:
+            print(f"   -> Failed: {e}")
+
     # Summary
     print(f"\n{'='*40}\nSummary of Validation Accuracy\n{'='*40}")
     # Sort results by accuracy
@@ -879,6 +923,49 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
         print("         To differentiate methods, try reducing 'n_features' (e.g., to 5 or 10).")
 
     return sorted_results, feature_sets, execution_times
+
+def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, file_path=None, version='v1', random_state=42):
+    """
+    Selects features based on the best performing method (Accuracy).
+    If ties occur, selects the method with the lowest execution time.
+    """
+    # Run comparison to get scores, feature sets, and execution times
+    sorted_results, feature_sets, execution_times = compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features, sample_size, random_state)
+    
+    # Plot results if path is provided
+    if file_path:
+        plot_feature_selection_comparison(sorted_results, file_path, version)
+    
+    print(f"\n{'='*40}\nSelecting Best Feature Selection Method\n{'='*40}")
+    
+    # Find max accuracy
+    if not sorted_results:
+        print("No results found. Returning empty feature list.")
+        return [], sorted_results
+
+    max_accuracy = max(sorted_results.values())
+    
+    # Find all methods with that accuracy (using small epsilon for float comparison)
+    candidates = [method for method, acc in sorted_results.items() if acc >= max_accuracy - 1e-9]
+    
+    print(f"Highest Validation Accuracy: {max_accuracy:.4f}")
+    print(f"Candidates with top accuracy: {candidates}")
+    
+    best_method = candidates[0]
+    
+    if len(candidates) > 1:
+        print(f"Tie detected. Selecting method with lowest execution time...")
+        # Sort candidates by execution time
+        best_method = min(candidates, key=lambda m: execution_times.get(m, float('inf')))
+        min_time = execution_times.get(best_method, 0)
+        print(f"Winner: {best_method} (Time: {min_time:.4f}s)")
+    else:
+        print(f"Winner: {best_method}")
+
+    selected_features = feature_sets[best_method]
+    print(f"Selected Features ({len(selected_features)}): {selected_features}")
+    
+    return selected_features, sorted_results
 
 def plot_feature_selection_comparison(results, file_path=None, version='v1'):
     """
@@ -934,51 +1021,8 @@ def plot_feature_selection_comparison(results, file_path=None, version='v1'):
         
     plt.show()
     plt.close()
+
 # --------------------------------------------------------------------------------------
-# The following functions i can choose from for feature selection and dimensionality reduction
-def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, file_path=None, version='v1', random_state=42):
-    """
-    Selects features based on the best performing method (Accuracy).
-    If ties occur, selects the method with the lowest execution time.
-    """
-    # Run comparison to get scores, feature sets, and execution times
-    sorted_results, feature_sets, execution_times = compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features, sample_size, random_state)
-    
-    # Plot results if path is provided
-    if file_path:
-        plot_feature_selection_comparison(sorted_results, file_path, version)
-    
-    print(f"\n{'='*40}\nSelecting Best Feature Selection Method\n{'='*40}")
-    
-    # Find max accuracy
-    if not sorted_results:
-        print("No results found. Returning empty feature list.")
-        return [], sorted_results
-
-    max_accuracy = max(sorted_results.values())
-    
-    # Find all methods with that accuracy (using small epsilon for float comparison)
-    candidates = [method for method, acc in sorted_results.items() if acc >= max_accuracy - 1e-9]
-    
-    print(f"Highest Validation Accuracy: {max_accuracy:.4f}")
-    print(f"Candidates with top accuracy: {candidates}")
-    
-    best_method = candidates[0]
-    
-    if len(candidates) > 1:
-        print(f"Tie detected. Selecting method with lowest execution time...")
-        # Sort candidates by execution time
-        best_method = min(candidates, key=lambda m: execution_times.get(m, float('inf')))
-        min_time = execution_times.get(best_method, 0)
-        print(f"Winner: {best_method} (Time: {min_time:.4f}s)")
-    else:
-        print(f"Winner: {best_method}")
-
-    selected_features = feature_sets[best_method]
-    print(f"Selected Features ({len(selected_features)}): {selected_features}")
-    
-    return selected_features, sorted_results
-
 def log_metrics(model_results, model_name, accuracy, precision, recall, f1, train_time, pred_time):
     """
     Calculates metrics and appends them to the model_results list.
@@ -1063,3 +1107,86 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
             
         plt.show()
         plt.close()
+
+def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, output_encoder, file_path, version, results_file_name, cm_title, notes=""):
+    # Ensure inputs are numpy arrays (handle DataFrames/Series)
+    if hasattr(y_val, 'values'):
+        y_val = y_val.values
+    if hasattr(y_pred, 'values'):
+        y_pred = y_pred.values
+
+    accuracy = accuracy_score(y_val, y_pred)
+    precision = precision_score(y_val, y_pred, average='weighted', zero_division=0)
+    recall = recall_score(y_val, y_pred, average='weighted', zero_division=0)
+    f1 = f1_score(y_val, y_pred, average='weighted', zero_division=0)
+    classification_rep = classification_report(y_val, y_pred, target_names=output_encoder.classes_, digits=8, zero_division=0)
+    cm = confusion_matrix(y_val, y_pred)
+
+    print(f"Accuracy: {accuracy:.8f}")
+    print(f"Precision: {precision:.8f}")
+    print(f"Recall: {recall:.8f}")
+    print(f"F1 Score: {f1:.8f}")
+    print(f"Training Time: {training_time:.4f} seconds")
+    print(f"Prediction Time: {prediction_time:.4f} seconds")
+    print(f"latency per sample: {prediction_time/len(y_val):.8f} seconds")
+    print(f"\nClassification Report: \n{classification_rep}")
+
+    # Get current time for the log
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp_safe = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
+
+    full_path = os.path.join(file_path, version + '_' + results_file_name)
+
+    # 'a' mode creates the file if missing, appends if present
+    with open(full_path, 'a') as f:
+        # 1. Add a separator and Timestamp so you know WHEN this run happened
+        f.write(f"{'='*90}\n")
+        f.write(f"Experiment Run: {timestamp}\n")
+        f.write(f"{'='*90}\n")
+        
+        # Add notes section
+        if notes:
+            f.write(f"Notes:\n{notes}\n\n")
+
+        # 2. Write your metrics
+        f.write(f"Accuracy: {accuracy:.8f}\n")
+        f.write(f"Precision: {precision:.8f}\n")
+        f.write(f"Recall: {recall:.8f}\n")
+        f.write(f"F1 Score: {f1:.8f}\n")
+        f.write(f"Training Time: {training_time:.4f} seconds\n")
+        f.write(f"Prediction Time: {prediction_time:.4f} seconds\n")
+        f.write(f"Latency per sample: {prediction_time/len(y_val):.8f} seconds\n")
+        f.write(f"\nClassification Report: \n{classification_rep}\n")
+        f.write(f"\nConfusion Matrix:\n{np.array2string(cm, separator=', ')}\n")
+
+        # 3. Add a blank line at the end for spacing
+        f.write("\n")
+        
+    # Plot confusion matrix
+    plt.figure(figsize=(4, 3.5))
+    
+    # IEEE Style Heatmap
+    ax = sns.heatmap(cm, annot=True, fmt='d', cbar=True, cmap='Blues',
+                xticklabels=output_encoder.classes_, yticklabels=output_encoder.classes_,
+                annot_kws={"size": 6}, linewidths=0.5, linecolor='gray')
+    
+    # Explicitly remove grid (crucial for heatmaps when global grid is on)
+    ax.grid(False)
+    
+    plt.xlabel('Predicted Class', fontsize=10, fontname='Times New Roman')
+    plt.ylabel('True Class', fontsize=10, fontname='Times New Roman')
+    plt.xticks(rotation=90, ha='center', fontsize=8, fontname='Times New Roman')
+    plt.yticks(fontsize=8, fontname='Times New Roman')
+    
+    # Save confusion matrix plot
+    # Use timestamp to prevent overwriting and include model identifier from results filename
+    model_id = os.path.splitext(results_file_name)[0]
+    plt.savefig(os.path.join(file_path, f"{version}_{model_id}_{timestamp_safe}_confusion_matrix.pdf"), format='pdf', bbox_inches='tight')
+    plt.show()
+    plt.close()
+
+    return accuracy, precision, recall, f1
+# --------------------------------------------------------------------------------------
