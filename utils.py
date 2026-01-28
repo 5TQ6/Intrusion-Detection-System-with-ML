@@ -17,10 +17,10 @@ from sklearn.feature_selection import RFE, SelectKBest, f_classif, mutual_info_c
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import MinMaxScaler, PowerTransformer, StandardScaler
-from collections import Counter
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+
 
 def apply_ieee_style():
     """Applies IEEE academic style to matplotlib plots."""
@@ -315,10 +315,10 @@ def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, outp
         y_pred = y_pred.values
 
     accuracy = accuracy_score(y_val, y_pred)
-    precision = precision_score(y_val, y_pred, average='weighted')
-    recall = recall_score(y_val, y_pred, average='weighted')
-    f1 = f1_score(y_val, y_pred, average='weighted')
-    classification_rep = classification_report(y_val, y_pred, target_names=output_encoder.classes_, digits=8)
+    precision = precision_score(y_val, y_pred, average='weighted', zero_division=0)
+    recall = recall_score(y_val, y_pred, average='weighted', zero_division=0)
+    f1 = f1_score(y_val, y_pred, average='weighted', zero_division=0)
+    classification_rep = classification_report(y_val, y_pred, target_names=output_encoder.classes_, digits=8, zero_division=0)
     cm = confusion_matrix(y_val, y_pred)
 
     print(f"Accuracy: {accuracy:.8f}")
@@ -539,7 +539,7 @@ def perform_filter_feature_selection(X_train, y_train, n_features_to_select=20, 
             elapsed_time = time.time() - start_time
             print(f"[Filter] Completed in {elapsed_time:.2f} seconds.")
             print(f"[Filter] Selected Features: {selected_features}")
-            return selected_features
+            return selected_features, elapsed_time
         
     elif method == 'variance':
         # VarianceThreshold doesn't take k, so we find the threshold manually
@@ -551,7 +551,7 @@ def perform_filter_feature_selection(X_train, y_train, n_features_to_select=20, 
         elapsed_time = time.time() - start_time
         print(f"[Filter] Completed in {elapsed_time:.2f} seconds.")
         print(f"[Filter] Selected Features: {selected_features}")
-        return selected_features
+        return selected_features, elapsed_time
     elif method == 'fisher':
         # Manual Fisher Score implementation
         # F = sum(n_i * (mu_i - mu)^2) / sum(n_i * var_i)
@@ -577,7 +577,7 @@ def perform_filter_feature_selection(X_train, y_train, n_features_to_select=20, 
         elapsed_time = time.time() - start_time
         print(f"[Filter] Completed in {elapsed_time:.2f} seconds.")
         print(f"[Filter] Selected Features: {selected_features}")
-        return selected_features
+        return selected_features, elapsed_time
     else:
         raise ValueError(f"Unknown filter method: {method}")
         
@@ -590,7 +590,7 @@ def perform_filter_feature_selection(X_train, y_train, n_features_to_select=20, 
     print(f"[Filter] Completed in {elapsed_time:.2f} seconds.")
     print(f"[Filter] Selected Features: {selected_features}")
     
-    return selected_features
+    return selected_features, elapsed_time
 
 def perform_wrapper_feature_selection(X_train, y_train, n_features_to_select=20, method='rfe'):
     """
@@ -743,7 +743,7 @@ def perform_wrapper_feature_selection(X_train, y_train, n_features_to_select=20,
     elapsed_time = time.time() - start_time
     print(f"[Wrapper] Completed in {elapsed_time:.2f} seconds.")
     print(f"[Wrapper] Selected Features: {selected_features}")
-    return selected_features
+    return selected_features, elapsed_time
 
 def perform_embedded_feature_selection(X_train, y_train, n_features_to_select=20, method='rf'):
     """
@@ -794,8 +794,7 @@ def perform_embedded_feature_selection(X_train, y_train, n_features_to_select=20
     elapsed_time = time.time() - start_time
     print(f"[Embedded] Completed in {elapsed_time:.2f} seconds.")
     print(f"[Embedded] Selected Features: {selected_features}")
-    
-    return selected_features
+    return selected_features, elapsed_time
 # --------------------------------------------------------------------------------------
 # The following functions are implemented inside the (perform_voting_feature_selection) function
 def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, random_state=42):
@@ -805,6 +804,7 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
     """
     results = {}
     feature_sets = {}
+    execution_times = {}
     
     # Set seed for reproducibility
     if random_state is not None:
@@ -823,19 +823,20 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
 
     print(f"\n{'='*40}\nComparing Feature Selection Methods\n{'='*40}")
     
-    # Use MLP for evaluation
-    eval_model = MLPClassifier(hidden_layer_sizes=(64, 32), random_state=random_state, max_iter=300, early_stopping=True, solver='adam', activation='relu',verbose=True)
+    eval_model = RandomForestClassifier(n_estimators=100, random_state=random_state, n_jobs=-1)
+    #eval_model = MLPClassifier(hidden_layer_sizes=(128, 96, 64, 48), max_iter=300, activation='relu', solver='adam', alpha=0.005, verbose=True, random_state=random_state)
 
     # --- Filter Methods ---
     filter_methods = ['pearson', 'anova', 'chi2', 'mutual_info', 'variance', 'fisher']
     for method in filter_methods:
         print(f"\n--- Filter Method: {method} ---")
         try:
-            feats = perform_filter_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
+            feats, exec_time = perform_filter_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
             eval_model.fit(X_train[feats], y_train)
             acc = eval_model.score(X_val[feats], y_val)
             results[f'Filter ({method})'] = acc
             feature_sets[f'Filter ({method})'] = feats
+            execution_times[f'Filter ({method})'] = exec_time
             print(f"   -> Validation Accuracy: {acc:.4f}")
         except Exception as e:
             print(f"   -> Failed: {e}")
@@ -844,22 +845,24 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
     wrapper_methods = ['forward', 'backward', 'stepwise', 'rfe', 'genetic', 'annealing']
     for method in wrapper_methods:
         print(f"\n--- Wrapper Method: {method} ---")
-        feats = perform_wrapper_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
+        feats, exec_time = perform_wrapper_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
         eval_model.fit(X_train[feats], y_train)
         acc = eval_model.score(X_val[feats], y_val)
         results[f'Wrapper ({method})'] = acc
         feature_sets[f'Wrapper ({method})'] = feats
+        execution_times[f'Wrapper ({method})'] = exec_time
         print(f"   -> Validation Accuracy: {acc:.4f}")
 
     # --- Embedded Methods ---
     embedded_methods = ['lasso', 'ridge', 'elastic_net', 'rf', 'gradient_boosting']
     for method in embedded_methods:
         print(f"\n--- Embedded Method: {method} ---")
-        feats = perform_embedded_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
+        feats, exec_time = perform_embedded_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
         eval_model.fit(X_train[feats], y_train)
         acc = eval_model.score(X_val[feats], y_val)
         results[f'Embedded ({method})'] = acc
         feature_sets[f'Embedded ({method})'] = feats
+        execution_times[f'Embedded ({method})'] = exec_time
         print(f"   -> Validation Accuracy: {acc:.4f}")
 
     # Summary
@@ -875,7 +878,7 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
         print("         This suggests the dataset has strong signal or high redundancy.")
         print("         To differentiate methods, try reducing 'n_features' (e.g., to 5 or 10).")
 
-    return sorted_results, feature_sets
+    return sorted_results, feature_sets, execution_times
 
 def plot_feature_selection_comparison(results, file_path=None, version='v1'):
     """
@@ -933,84 +936,48 @@ def plot_feature_selection_comparison(results, file_path=None, version='v1'):
     plt.close()
 # --------------------------------------------------------------------------------------
 # The following functions i can choose from for feature selection and dimensionality reduction
-def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, top_k=3, file_path=None, version='v1', random_state=42):
+def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, file_path=None, version='v1', random_state=42):
     """
-    Selects features based on a majority vote from the top K performing feature selection methods.
+    Selects features based on the best performing method (Accuracy).
+    If ties occur, selects the method with the lowest execution time.
     """
-    # Run comparison to get scores and feature sets
-    sorted_results, feature_sets = compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features, sample_size, random_state)
+    # Run comparison to get scores, feature sets, and execution times
+    sorted_results, feature_sets, execution_times = compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features, sample_size, random_state)
     
     # Plot results if path is provided
     if file_path:
         plot_feature_selection_comparison(sorted_results, file_path, version)
     
-    # --- Debugging/Verification Block ---
-    print(f"\n{'='*40}\n[Debugging] Feature Selection Verification\n{'='*40}")
+    print(f"\n{'='*40}\nSelecting Best Feature Selection Method\n{'='*40}")
     
-    # 1. Print Feature Lists for Top 5
-    debug_top_k = 5
-    top_methods_debug = list(sorted_results.keys())[:debug_top_k]
-    
-    for i, method in enumerate(top_methods_debug):
-        feats = feature_sets[method]
-        print(f"\nRank {i+1}: {method} (Acc: {sorted_results[method]:.4f})")
-        print(f"  Features: {feats}")
+    # Find max accuracy
+    if not sorted_results:
+        print("No results found. Returning empty feature list.")
+        return [], sorted_results
 
-    # 2. Check for Identity & 3. Calculate Overlap
-    if len(top_methods_debug) >= 2:
-        best_method = top_methods_debug[0]
-        best_feats = set(feature_sets[best_method])
-        
-        print(f"\n[Comparison] Comparing against Rank 1 ({best_method}):")
-        
-        for i in range(1, len(top_methods_debug)):
-            current_method = top_methods_debug[i]
-            current_feats = set(feature_sets[current_method])
-            
-            if best_feats == current_feats:
-                print(f"  - Rank {i+1} ({current_method}) selected the EXACT same features as Rank 1.")
-            else:
-                # Jaccard Index
-                intersection = len(best_feats.intersection(current_feats))
-                union = len(best_feats.union(current_feats))
-                jaccard = intersection / union if union > 0 else 0
-                print(f"  - Rank {i+1} ({current_method}) overlap: {intersection} common features (Jaccard: {jaccard:.2%})")
+    max_accuracy = max(sorted_results.values())
     
-    print(f"{'='*40}\n")
-    # --- End Debugging Block ---
+    # Find all methods with that accuracy (using small epsilon for float comparison)
+    candidates = [method for method, acc in sorted_results.items() if acc >= max_accuracy - 1e-9]
+    
+    print(f"Highest Validation Accuracy: {max_accuracy:.4f}")
+    print(f"Candidates with top accuracy: {candidates}")
+    
+    best_method = candidates[0]
+    
+    if len(candidates) > 1:
+        print(f"Tie detected. Selecting method with lowest execution time...")
+        # Sort candidates by execution time
+        best_method = min(candidates, key=lambda m: execution_times.get(m, float('inf')))
+        min_time = execution_times.get(best_method, 0)
+        print(f"Winner: {best_method} (Time: {min_time:.4f}s)")
+    else:
+        print(f"Winner: {best_method}")
 
-    print(f"\n{'='*40}\nStarting Voting Feature Selection (Top {top_k} Methods)\n{'='*40}")
+    selected_features = feature_sets[best_method]
+    print(f"Selected Features ({len(selected_features)}): {selected_features}")
     
-    # Get top k methods
-    top_methods = list(sorted_results.keys())[:top_k]
-    print(f"Top {top_k} methods selected for voting:")
-    for m in top_methods:
-        print(f"  - {m} (Accuracy: {sorted_results[m]:.4f})")
-    
-    # Collect all features from top methods
-    all_selected_features = []
-    for method in top_methods:
-        all_selected_features.extend(feature_sets[method])
-        
-    # Analyze overlap to explain similar accuracies
-    if len(top_methods) >= 2:
-        set1 = set(feature_sets[top_methods[0]])
-        set2 = set(feature_sets[top_methods[1]])
-        overlap = len(set1.intersection(set2))
-        print(f"[Voting] Overlap between top 2 methods ({top_methods[0]} & {top_methods[1]}): {overlap}/{n_features} features in common.")
-
-    # Count occurrences
-    feature_counts = Counter(all_selected_features)
-    
-    # Majority vote (>= ceil(top_k / 2))
-    majority_threshold = (top_k // 2) + 1
-    voting_features = [feat for feat, count in feature_counts.items() if count >= majority_threshold]
-    
-    print(f"\n[Voting] Features selected by majority ({majority_threshold}+ votes): {voting_features}")
-    print(f"[Voting] Total features selected: {len(voting_features)}")
-    
-    # Return both the selected features and the results for analysis/plotting
-    return voting_features, sorted_results
+    return selected_features, sorted_results
 
 def log_metrics(model_results, model_name, accuracy, precision, recall, f1, train_time, pred_time):
     """
@@ -1061,7 +1028,7 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
             continue
             
         # Create a new figure for every metric
-        plt.figure(figsize=(3.5, 3.5))
+        plt.figure(figsize=(4, 3.5))
         
         # Create bar chart
         # hue='Model' assigns colors, legend=False hides the redundant legend
@@ -1070,7 +1037,7 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
         # Titles and Labels
         plt.ylabel(metric, fontsize=10, fontname='Times New Roman')
         plt.xlabel('Model', fontsize=10, fontname='Times New Roman')
-        plt.xticks(rotation=45, fontsize=8, fontname='Times New Roman', ha='right')
+        plt.xticks(rotation=90, fontsize=8, fontname='Times New Roman', ha='right')
         plt.yticks(fontsize=8, fontname='Times New Roman')
         
         ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0)

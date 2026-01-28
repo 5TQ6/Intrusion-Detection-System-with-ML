@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from imblearn.over_sampling import SMOTE, ADASYN
+from imblearn.over_sampling import SMOTE, ADASYN, BorderlineSMOTE
 from imblearn.under_sampling import RandomUnderSampler
 from utils import print_memory_usage
 
@@ -63,7 +63,7 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
     # print_memory_usage(f"Before Sampling ({sampling_method})") 
     
     if sampling_method == 'smote':
-        sampler = SMOTE(random_state=42)
+        sampler = BorderlineSMOTE(random_state=42, kind='borderline-1')
     elif sampling_method == 'adasyn':
         sampler = ADASYN(random_state=42)
     elif sampling_method == 'undersample':
