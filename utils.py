@@ -3,7 +3,6 @@ from torch.utils.data import DataLoader, TensorDataset
 import torch.nn as nn
 import torch.optim as optim
 import time
-
 import gc
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,6 +10,7 @@ import seaborn as sns
 import numpy as np
 import os
 import datetime
+
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, confusion_matrix, classification_report
 from sklearn.preprocessing import LabelEncoder
 from sklearn.feature_selection import RFE, SelectKBest, f_classif, mutual_info_classif, chi2, VarianceThreshold, SequentialFeatureSelector, SelectFromModel, f_regression
@@ -18,8 +18,6 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import MinMaxScaler, PowerTransformer, StandardScaler
-from sklearn.svm import SVC
-from sklearn.neural_network import MLPClassifier
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from imblearn.over_sampling import SMOTE, ADASYN, BorderlineSMOTE
@@ -141,10 +139,8 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='st
     plt.close()
     
     # Free up memory by deleting the large original DataFrames
-    print_memory_usage("Before GC")
     del X, y
     gc.collect()
-    print_memory_usage("After GC")
 
     # Impute missing values with median for numerical columns
     # CRITICAL: Calculate median ONLY on Training data to avoid leakage
