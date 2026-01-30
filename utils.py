@@ -22,26 +22,27 @@ from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from imblearn.over_sampling import SMOTE, ADASYN, BorderlineSMOTE
 from imblearn.under_sampling import RandomUnderSampler
-
+from sklearn.neural_network import MLPClassifier
 
 def apply_ieee_style():
-    """Applies IEEE academic style to matplotlib plots."""
+    """Applies MDPI academic style to matplotlib plots."""
     plt.rcParams.update({
-        'figure.figsize': (3.5, 3.0),
-        'font.family': 'serif',
-        'font.serif': ['Times New Roman'],
-        'font.size': 10,
-        'axes.labelsize': 10,
-        'axes.titlesize': 10,
+        'figure.figsize': (3.35, 3.0), # 8.5 cm approx 3.35 inches
+        'font.family': 'sans-serif',
+        'font.sans-serif': ['Arial', 'Helvetica', 'DejaVu Sans'],
+        'font.size': 8,
+        'axes.labelsize': 9,
+        'axes.titlesize': 9,
         'legend.fontsize': 8,
         'xtick.labelsize': 8,
         'ytick.labelsize': 8,
-        'axes.spines.top': False,
-        'axes.spines.right': False,
-        'axes.grid': True,
-        'grid.alpha': 0.5,
-        'grid.linestyle': '--',
-        'savefig.format': 'pdf',
+        'axes.spines.top': True,
+        'axes.spines.right': True,
+        'axes.grid': False,
+        'xtick.direction': 'in',
+        'ytick.direction': 'in',
+        'savefig.format': 'png',
+        'savefig.dpi': 600,
         'savefig.bbox': 'tight',
         'axes.prop_cycle': plt.cycler(color=['#0072B2', '#D55E00', '#009E73', '#CC79A7', '#F0E442', '#56B4E9'])
     })
@@ -132,8 +133,8 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='st
     if image_save_path:
         if not os.path.exists(image_save_path):
             os.makedirs(image_save_path)
-        plt.savefig(os.path.join(image_save_path, 'class_distribution_check.pdf'))
-        print(f"Saved distribution plot to {os.path.join(image_save_path, 'class_distribution_check.pdf')}")
+        plt.savefig(os.path.join(image_save_path, 'class_distribution_check.png'))
+        print(f"Saved distribution plot to {os.path.join(image_save_path, 'class_distribution_check.png')}")
 
     plt.show()
     plt.close()
@@ -207,7 +208,7 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='st
                     plt.subplot(3, 1, i+1)
                     sns.histplot(X_train[col], kde=True, color='#D55E00', bins=30)
                 plt.tight_layout()
-                plt.savefig(os.path.join(image_save_path, 'distribution_before_pt.pdf'))
+                plt.savefig(os.path.join(image_save_path, 'distribution_before_pt.png'))
                 plt.show()
                 plt.close()
 
@@ -225,7 +226,7 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='st
                 plt.subplot(3, 1, i+1)
                 sns.histplot(X_train[col], kde=True, color='#0072B2', bins=30)
             plt.tight_layout()
-            plt.savefig(os.path.join(image_save_path, 'distribution_after_pt.pdf'))
+            plt.savefig(os.path.join(image_save_path, 'distribution_after_pt.png'))
             plt.show()
             plt.close()
 
@@ -256,16 +257,16 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
     
     # --- GLOBAL IEEE STYLE SETTINGS ---
     # Apply this once so all charts look professional
-    plt.rcParams.update({
-        "font.family": "serif",
-        "font.serif": ["Times New Roman"],
-        "font.size": 10,
-        "axes.labelsize": 10,
-        "legend.fontsize": 8,
-        "xtick.labelsize": 8,
-        "ytick.labelsize": 8,
-        "figure.figsize": (3.5, 3.0) # Matches IEEE Column Width
-    })
+    # plt.rcParams.update({
+    #     "font.family": "serif",
+    #     "font.serif": ["Times New Roman"],
+    #     "font.size": 10,
+    #     "axes.labelsize": 10,
+    #     "legend.fontsize": 8,
+    #     "xtick.labelsize": 8,
+    #     "ytick.labelsize": 8,
+    #     "figure.figsize": (3.5, 3.0) # Matches IEEE Column Width
+    # })
 
     ## 1. Data Balance Plotting (Before Sampling)
     if plot_distributions:
@@ -285,7 +286,7 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
         
         # CRITICAL FIX: Send Grid to Background
         ax.set_axisbelow(True) 
-        ax.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7)
+        # ax.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7) # Grid disabled for MDPI
         
         # Plot Bars
         ax.bar(x=labels, height=label_frequencies, color='#0072B2')
@@ -295,13 +296,13 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
         ax.set_ylabel('Frequency')
         plt.xticks(rotation=90, ha='center') # Vertical labels
         
-        # Clean Spines
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
+        # Clean Spines (MDPI requires visible spines)
+        # ax.spines['top'].set_visible(False)
+        # ax.spines['right'].set_visible(False)
         
         # Save
         plt.tight_layout()
-        plt.savefig(os.path.join(file_path, version + '_' + 'attack_type_distribution.pdf'), format='pdf', bbox_inches='tight')
+        plt.savefig(os.path.join(file_path, version + '_' + 'attack_type_distribution.png'), format='png', bbox_inches='tight')
         plt.show()
         plt.close()
 
@@ -343,7 +344,7 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
         
         # CRITICAL FIX: Send Grid to Background
         ax.set_axisbelow(True)
-        ax.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7)
+        # ax.grid(True, axis='y', linestyle='--', linewidth=0.5, alpha=0.7) # Grid disabled for MDPI
         
         # Plot Bars
         ax.bar(x=labels, height=label_frequencies, color='#0072B2')
@@ -353,13 +354,13 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
         ax.set_ylabel('Frequency')
         plt.xticks(rotation=90, ha='center')
         
-        # Clean Spines
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
+        # Clean Spines (MDPI requires visible spines)
+        # ax.spines['top'].set_visible(False)
+        # ax.spines['right'].set_visible(False)
         
         # Save
         plt.tight_layout()
-        plt.savefig(os.path.join(file_path, version + '_' + f'attack_type_distribution_with_{sampling_method}.pdf'), format='pdf', bbox_inches='tight')
+        plt.savefig(os.path.join(file_path, version + '_' + f'attack_type_distribution_with_{sampling_method}.png'), format='png', bbox_inches='tight')
         plt.show()
         plt.close()
 
@@ -380,128 +381,8 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
     
     return X_train_out, X_val_out, X_test_out, y_resampled, y_val, y_test
 
-def create_dataloaders(X_train, y_train, X_val, y_val, batch_size=128):
-    # Ensure inputs are numpy arrays (handle DataFrames)
-    if hasattr(X_train, 'values'):
-        X_train = X_train.values
-    if hasattr(X_val, 'values'):
-        X_val = X_val.values
-
-    # Reshape to (N, 1, F) for consistency across LSTM, GRU, CNN
-    X_train_reshaped = X_train.reshape((X_train.shape[0], 1, X_train.shape[1]))
-    X_val_reshaped = X_val.reshape((X_val.shape[0], 1, X_val.shape[1]))
-    
-    train_features = torch.tensor(X_train_reshaped, dtype=torch.float32)
-    train_targets = torch.tensor(y_train, dtype=torch.long)
-    val_features = torch.tensor(X_val_reshaped, dtype=torch.float32)
-    val_targets = torch.tensor(y_val, dtype=torch.long)
-    
-    train_dataset = TensorDataset(train_features, train_targets)
-    val_dataset = TensorDataset(val_features, val_targets)
-    
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    
-    return train_loader, val_loader
-
-def train_and_evaluate_pytorch_model(model, train_loader, val_loader, num_epochs=10, device='cpu', model_name="Model", use_amp=False):
-    model = model.to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters())
-
-    # Determine device type for AMP (Automatic Mixed Precision)
-    if isinstance(device, str):
-        device_type = device.split(':')[0]
-    else:
-        device_type = device.type
-
-    # GradScaler is primarily for CUDA. For MPS (Mac M-series), standard float32 is often fast enough.
-    # If using CUDA, we initialize the scaler.
-    scaler = torch.cuda.amp.GradScaler() if (use_amp and device_type == 'cuda') else None
-    
-    if use_amp and device_type == 'mps':
-        print("[Warning] Mixed Precision (AMP) enabled on MPS. Gradient Scaling is disabled, which may cause instability. Recommend use_amp=False for M-series chips.")
-    
-    start_time = time.time()
-    train_acc_history = []
-    val_acc_history = []
-    
-    for epoch in range(num_epochs):
-        model.train()
-        correct = 0
-        total = 0
-        for inputs, labels in train_loader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            optimizer.zero_grad()
-            
-            # Mixed Precision Context
-            # Use generic torch.autocast which supports 'cuda', 'cpu', and 'mps' (PyTorch 2.1+)
-            if use_amp:
-                # MPS/CUDA use float16, CPU uses bfloat16 usually
-                amp_dtype = torch.float16 if device_type != 'cpu' else torch.bfloat16
-                with torch.autocast(device_type=device_type, dtype=amp_dtype):
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
-            else:
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
-            
-            # Scale gradients to prevent underflow in float16
-            if scaler:
-                scaler.scale(loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
-            else:
-                loss.backward()
-                optimizer.step()
-            
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-        train_acc_history.append(correct / total)
-        
-        model.eval()
-        correct_val = 0
-        total_val = 0
-        with torch.no_grad():
-            for inputs, labels in val_loader:
-                inputs, labels = inputs.to(device), labels.to(device)
-                outputs = model(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                total_val += labels.size(0)
-                correct_val += (predicted == labels).sum().item()
-        val_acc_history.append(correct_val / total_val)
-        
-    training_time = time.time() - start_time
-    
-    start_time = time.time()
-    model.eval()
-    all_preds = []
-    with torch.no_grad():
-        for inputs, _ in val_loader:
-            inputs = inputs.to(device)
-            outputs = model(inputs)
-            _, predicted = torch.max(outputs.data, 1)
-            all_preds.extend(predicted.cpu().numpy())
-    prediction_time = time.time() - start_time
-    y_pred = np.array(all_preds)
-    
-    plt.figure(figsize=(3.5, 2.5))
-    plt.plot(train_acc_history, label='Training Accuracy')
-    plt.plot(val_acc_history, label='Validation Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.show()
-    plt.close()
-    
-    # Clear GPU/MPS cache after training to release memory back to the OS
-    clear_memory(device)
-    
-    return y_pred, training_time, prediction_time
-
 # --------------------------------------------------------------------------------------
-# The following functions are implemented inside the (compare_feature_selection_methods) function
+# FEATURE SELECTION METHODS
 def perform_filter_feature_selection(X_train, y_train, n_features_to_select=20, method='anova'):
     """
     Performs Filter-based feature selection.
@@ -787,39 +668,7 @@ def perform_embedded_feature_selection(X_train, y_train, n_features_to_select=20
     print(f"[Embedded] Selected Features: {selected_features}")
     return selected_features, elapsed_time
 
-def perform_transformation_feature_selection(X_fit, y_fit, X_train, X_val, n_components=0.95, method='pca'):
-    """
-    Performs feature transformation (PCA, LDA).
-    Returns transformed X_train and X_val (as numpy arrays) and execution time.
-    """
-    print(f"\n[Transformation] Starting {method.upper()} to reduce to {n_components} components...")
-    start_time = time.time()
-    
-    if method == 'pca':
-        model = PCA(n_components=n_components)
-    elif method == 'lda':
-        n_classes = len(np.unique(y_fit))
-        # LDA components cannot exceed n_classes - 1
-        actual_components = min(n_components, n_classes - 1)
-        if actual_components < 1:
-            actual_components = 1
-        if actual_components < n_components:
-            print(f"[Transformation] LDA limited to {actual_components} components (n_classes - 1).")
-        model = LinearDiscriminantAnalysis(n_components=actual_components)
-    else:
-        raise ValueError(f"Unknown transformation method: {method}")
-    
-    model.fit(X_fit, y_fit)
-    X_train_trans = model.transform(X_train)
-    X_val_trans = model.transform(X_val)
-    
-    elapsed_time = time.time() - start_time
-    print(f"[Transformation] Completed in {elapsed_time:.2f} seconds.")
-    
-    return X_train_trans, X_val_trans, elapsed_time
-
-# The following function are implemented inside the (perform_voting_feature_selection) function
-def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, random_state=42):
+def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, random_state=42, method_categories=None):
     """
     Runs multiple feature selection methods on a sample of data and evaluates them.
     Useful for deciding which method works best for your specific dataset.
@@ -827,6 +676,9 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
     results = {}
     feature_sets = {}
     execution_times = {}
+    
+    if method_categories is None:
+        method_categories = ['filter', 'wrapper', 'embedded']
     
     # Set seed for reproducibility
     if random_state is not None:
@@ -845,65 +697,50 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
 
     print(f"\n{'='*40}\nComparing Feature Selection Methods\n{'='*40}")
     
-    eval_model = RandomForestClassifier(n_estimators=100, random_state=random_state, n_jobs=-1)
-    #eval_model = MLPClassifier(hidden_layer_sizes=(128, 96, 64, 48), max_iter=300, activation='relu', solver='adam', alpha=0.005, verbose=True, random_state=random_state)
+    #eval_model = RandomForestClassifier(n_estimators=100, random_state=random_state, n_jobs=-1)
+    eval_model = MLPClassifier(hidden_layer_sizes=(128, 96, 64, 48), max_iter=300, activation='relu', solver='adam', alpha=0.005, verbose=True, random_state=random_state)
 
     # --- Filter Methods ---
-    filter_methods = ['pearson', 'anova', 'chi2', 'mutual_info', 'variance', 'fisher']
-    for method in filter_methods:
-        print(f"\n--- Filter Method: {method} ---")
-        try:
-            feats, exec_time = perform_filter_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
-            eval_model.fit(X_train[feats], y_train)
-            acc = eval_model.score(X_val[feats], y_val)
-            results[f'Filter ({method})'] = acc
-            feature_sets[f'Filter ({method})'] = feats
-            execution_times[f'Filter ({method})'] = exec_time
-            print(f"   -> Validation Accuracy: {acc:.4f}")
-        except Exception as e:
-            print(f"   -> Failed: {e}")
+    if 'filter' in method_categories:
+        filter_methods = ['pearson', 'anova', 'chi2', 'mutual_info', 'variance', 'fisher']
+        for method in filter_methods:
+            print(f"\n--- Filter Method: {method} ---")
+            try:
+                feats, exec_time = perform_filter_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
+                eval_model.fit(X_train[feats], y_train)
+                acc = eval_model.score(X_val[feats], y_val)
+                results[f'Filter ({method})'] = acc
+                feature_sets[f'Filter ({method})'] = feats
+                execution_times[f'Filter ({method})'] = exec_time
+                print(f"   -> Validation Accuracy: {acc:.4f}")
+            except Exception as e:
+                print(f"   -> Failed: {e}")
 
     # --- Wrapper Methods ---
-    wrapper_methods = ['forward', 'backward', 'stepwise', 'rfe', 'genetic', 'annealing']
-    for method in wrapper_methods:
-        print(f"\n--- Wrapper Method: {method} ---")
-        feats, exec_time = perform_wrapper_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
-        eval_model.fit(X_train[feats], y_train)
-        acc = eval_model.score(X_val[feats], y_val)
-        results[f'Wrapper ({method})'] = acc
-        feature_sets[f'Wrapper ({method})'] = feats
-        execution_times[f'Wrapper ({method})'] = exec_time
-        print(f"   -> Validation Accuracy: {acc:.4f}")
+    if 'wrapper' in method_categories:
+        wrapper_methods = ['forward', 'backward', 'stepwise', 'rfe', 'genetic', 'annealing']
+        for method in wrapper_methods:
+            print(f"\n--- Wrapper Method: {method} ---")
+            feats, exec_time = perform_wrapper_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
+            eval_model.fit(X_train[feats], y_train)
+            acc = eval_model.score(X_val[feats], y_val)
+            results[f'Wrapper ({method})'] = acc
+            feature_sets[f'Wrapper ({method})'] = feats
+            execution_times[f'Wrapper ({method})'] = exec_time
+            print(f"   -> Validation Accuracy: {acc:.4f}")
 
     # --- Embedded Methods ---
-    embedded_methods = ['lasso', 'ridge', 'elastic_net', 'rf', 'gradient_boosting']
-    for method in embedded_methods:
-        print(f"\n--- Embedded Method: {method} ---")
-        feats, exec_time = perform_embedded_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
-        eval_model.fit(X_train[feats], y_train)
-        acc = eval_model.score(X_val[feats], y_val)
-        results[f'Embedded ({method})'] = acc
-        feature_sets[f'Embedded ({method})'] = feats
-        execution_times[f'Embedded ({method})'] = exec_time
-        print(f"   -> Validation Accuracy: {acc:.4f}")
-
-    # --- Transformation Methods ---
-    transformation_methods = ['pca', 'lda']
-    for method in transformation_methods:
-        print(f"\n--- Transformation Method: {method} ---")
-        try:
-            X_train_trans, X_val_trans, exec_time = perform_transformation_feature_selection(
-                X_sel, y_sel, X_train, X_val, n_components=n_features, method=method
-            )
-            eval_model.fit(X_train_trans, y_train)
-            acc = eval_model.score(X_val_trans, y_val)
-            results[f'Transformation ({method})'] = acc
-            # Use dummy feature names for compatibility with the rest of the pipeline
-            feature_sets[f'Transformation ({method})'] = [f"{method.upper()}_{i}" for i in range(X_train_trans.shape[1])]
-            execution_times[f'Transformation ({method})'] = exec_time
+    if 'embedded' in method_categories:
+        embedded_methods = ['lasso', 'ridge', 'elastic_net', 'rf', 'gradient_boosting']
+        for method in embedded_methods:
+            print(f"\n--- Embedded Method: {method} ---")
+            feats, exec_time = perform_embedded_feature_selection(X_sel, y_sel, n_features_to_select=n_features, method=method)
+            eval_model.fit(X_train[feats], y_train)
+            acc = eval_model.score(X_val[feats], y_val)
+            results[f'Embedded ({method})'] = acc
+            feature_sets[f'Embedded ({method})'] = feats
+            execution_times[f'Embedded ({method})'] = exec_time
             print(f"   -> Validation Accuracy: {acc:.4f}")
-        except Exception as e:
-            print(f"   -> Failed: {e}")
 
     # Summary
     print(f"\n{'='*40}\nSummary of Validation Accuracy\n{'='*40}")
@@ -920,13 +757,13 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
 
     return sorted_results, feature_sets, execution_times
 
-def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, file_path=None, version='v1', random_state=42):
+def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=20, sample_size=None, file_path=None, version='v1', random_state=42, method_categories=None):
     """
     Selects features based on the best performing method (Accuracy).
     If ties occur, selects the method with the lowest execution time.
     """
     # Run comparison to get scores, feature sets, and execution times
-    sorted_results, feature_sets, execution_times = compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features, sample_size, random_state)
+    sorted_results, feature_sets, execution_times = compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features, sample_size, random_state, method_categories)
     
     # Plot results if path is provided
     if file_path:
@@ -960,8 +797,153 @@ def perform_voting_feature_selection(X_train, y_train, X_val, y_val, n_features=
 
     selected_features = feature_sets[best_method]
     print(f"Selected Features ({len(selected_features)}): {selected_features}")
+
+    if "Transformation" in best_method:
+        print("\n[WARNING] A feature transformation method (PCA/LDA) was selected.")
+        print("          The returned 'selected_features' are synthetic names (e.g., PCA_0).")
+        print("          You cannot subset the original DataFrame with these.")
+        print("          You must fit a PCA/LDA model and transform your data instead.")
     
     return selected_features, sorted_results
+
+# --------------------------------------------------------------------------------------
+# FEATURE TRANSFORMATION METHODS
+def perform_transformation_feature_selection(X_fit, y_fit, X_train, X_val, X_test=None, n_components=0.95, method='pca'):
+    """
+    Performs feature transformation (PCA, LDA).
+    Returns transformed X_train, X_val, and X_test (as numpy arrays) and execution time.
+    """
+    print(f"\n[Transformation] Starting {method.upper()} to reduce to {n_components} components...")
+    start_time = time.time()
+    
+    if method == 'pca':
+        model = PCA(n_components=n_components)
+    elif method == 'lda':
+        n_classes = len(np.unique(y_fit))
+        # LDA components cannot exceed n_classes - 1
+        actual_components = min(n_components, n_classes - 1)
+        if actual_components < 1:
+            actual_components = 1
+        if actual_components < n_components:
+            print(f"[Transformation] LDA limited to {actual_components} components (n_classes - 1).")
+        model = LinearDiscriminantAnalysis(n_components=actual_components)
+    else:
+        raise ValueError(f"Unknown transformation method: {method}")
+    
+    model.fit(X_fit, y_fit)
+    X_train_trans = model.transform(X_train)
+    X_val_trans = model.transform(X_val)
+    
+    X_test_trans = None
+    if X_test is not None:
+        X_test_trans = model.transform(X_test)
+    
+    elapsed_time = time.time() - start_time
+    print(f"[Transformation] Completed in {elapsed_time:.2f} seconds.")
+    print("PCA explained variance ratio:", model.explained_variance_ratio_ if method == 'pca' else "LDA does not provide explained variance ratio.")
+    print("PCA explained variance (cumulative):", np.cumsum(model.explained_variance_ratio_) if method == 'pca' else "LDA does not provide explained variance.")
+    return X_train_trans, X_val_trans, X_test_trans, elapsed_time
+
+def compare_feature_transformation_methods(X_train, y_train, X_val, y_val, n_components_options=[0.99, 0.95, 0.90], sample_size=None, random_state=42):
+    """
+    Runs multiple feature transformation methods on a sample of data and evaluates them.
+    """
+    results = {}
+    feature_sets = {}
+    execution_times = {}
+    
+    # Set seed for reproducibility
+    if random_state is not None:
+        np.random.seed(random_state)
+    
+    # Downsample for speed during feature selection (optional)
+    if sample_size and sample_size < len(X_train):
+        print(f"\n[Comparison] Downsampling training data to {sample_size} samples for feature transformation...")
+        indices = np.random.choice(len(X_train), sample_size, replace=False)
+        X_sel = X_train.iloc[indices].copy()
+        y_sel = y_train[indices].copy()
+    else:
+        print(f"\n[Comparison] Using full training data ({len(X_train)} samples) for feature transformation.")
+        X_sel = X_train
+        y_sel = y_train
+
+    print(f"\n{'='*40}\nComparing Feature Transformation Methods\n{'='*40}")
+    
+    eval_model = MLPClassifier(hidden_layer_sizes=(128, 96, 64, 48), max_iter=300, activation='relu', solver='adam', alpha=0.005, verbose=True, random_state=random_state)
+
+    # --- Transformation Methods ---
+    transformation_methods = ['pca', 'lda']
+    
+    for method in transformation_methods:
+        for n_comp in n_components_options:
+            print(f"\n--- Transformation Method: {method} (n_components={n_comp}) ---")
+            try:
+                # Note: We ignore X_test_trans here as we are just evaluating
+                X_train_trans, X_val_trans, _, exec_time = perform_transformation_feature_selection(
+                    X_sel, y_sel, X_train, X_val, n_components=n_comp, method=method
+                )
+                eval_model.fit(X_train_trans, y_train)
+                acc = eval_model.score(X_val_trans, y_val)
+                results[f'{method.upper()}_{n_comp}'] = acc
+                # Use dummy feature names for compatibility with the rest of the pipeline
+                feature_sets[f'{method.upper()}_{n_comp}'] = [f"{method.upper()}_{i}" for i in range(X_train_trans.shape[1])]
+                execution_times[f'{method.upper()}_{n_comp}'] = exec_time
+                print(f"   -> Validation Accuracy: {acc:.4f}")
+            except Exception as e:
+                print(f"   -> Failed: {e}")
+
+    # Summary
+    print(f"\n{'='*40}\nSummary of Validation Accuracy\n{'='*40}")
+    # Sort results by accuracy
+    sorted_results = dict(sorted(results.items(), key=lambda item: item[1], reverse=True))
+    for method, score in sorted_results.items():
+        print(f"{method}: {score:.4f}")
+
+    return sorted_results, feature_sets, execution_times
+
+def perform_voting_feature_transformation(X_train, y_train, X_val, y_val, n_components_options=[0.99, 0.95, 0.90], sample_size=None, file_path=None, version='v1', random_state=42):
+    """
+    Selects the best feature transformation method (Accuracy).
+    If ties occur, selects the method with the lowest execution time.
+    """
+    # Run comparison to get scores, feature sets, and execution times
+    sorted_results, feature_sets, execution_times = compare_feature_transformation_methods(X_train, y_train, X_val, y_val, n_components_options, sample_size, random_state)
+    
+    # Plot results if path is provided
+    if file_path:
+        plot_feature_selection_comparison(sorted_results, file_path, version + "_transformation")
+    
+    print(f"\n{'='*40}\nSelecting Best Feature Transformation Method\n{'='*40}")
+    
+    # Find max accuracy
+    if not sorted_results:
+        print("No results found. Returning empty feature list.")
+        return None, sorted_results
+
+    max_accuracy = max(sorted_results.values())
+    
+    # Find all methods with that accuracy (using small epsilon for float comparison)
+    candidates = [method for method, acc in sorted_results.items() if acc >= max_accuracy - 1e-9]
+    
+    print(f"Highest Validation Accuracy: {max_accuracy:.4f}")
+    print(f"Candidates with top accuracy: {candidates}")
+    
+    best_method = candidates[0]
+    
+    if len(candidates) > 1:
+        print(f"Tie detected. Selecting method with lowest execution time...")
+        # Sort candidates by execution time
+        best_method = min(candidates, key=lambda m: execution_times.get(m, float('inf')))
+        min_time = execution_times.get(best_method, 0)
+        print(f"Winner: {best_method} (Time: {min_time:.4f}s)")
+    else:
+        print(f"Winner: {best_method}")
+
+    # Parse best method string to get method and n_components
+    # Format is like "PCA_0.95"
+    method_name, n_comp = best_method.split('_')
+    
+    return {'method': method_name.lower(), 'n_components': float(n_comp)}, sorted_results
 
 def plot_feature_selection_comparison(results, file_path=None, version='v1'):
     """
@@ -978,15 +960,15 @@ def plot_feature_selection_comparison(results, file_path=None, version='v1'):
     df_results = df_results.sort_values(by='Accuracy', ascending=False)
 
     # Set plot style (IEEE Standard)
-    plt.figure(figsize=(3.5, 4.5)) # Width 3.5 (column), Height 4.5 (for 17 methods)
+    plt.figure(figsize=(3.35, 4.5)) # Width 3.35 (column), Height 4.5 (for 17 methods)
     
     # Create bar chart (Horizontal for better readability of method names)
     ax = sns.barplot(x='Accuracy', y='Method', data=df_results, color='#0072B2', zorder=2)
     
-    plt.xlabel('Validation Accuracy', fontsize=10, fontname='Times New Roman')
-    plt.ylabel('Method', fontsize=10, fontname='Times New Roman')
-    plt.xticks(fontsize=8, fontname='Times New Roman')
-    plt.yticks(fontsize=8, fontname='Times New Roman')
+    plt.xlabel('Validation Accuracy', fontsize=9, fontname='Arial')
+    plt.ylabel('Method', fontsize=9, fontname='Arial')
+    plt.xticks(fontsize=8, fontname='Arial')
+    plt.yticks(fontsize=8, fontname='Arial')
     
     # Set X-axis limit to show differences clearly
     min_acc = df_results['Accuracy'].min()
@@ -996,29 +978,30 @@ def plot_feature_selection_comparison(results, file_path=None, version='v1'):
         plt.xlim(0, 1.01)
 
     # Grid and Spines
-    ax.grid(axis='x', linestyle='--', alpha=0.5, zorder=0)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    # ax.grid(axis='x', linestyle='--', alpha=0.5, zorder=0) # Grid disabled
+    # ax.spines['top'].set_visible(False)
+    # ax.spines['right'].set_visible(False)
     ax.spines['left'].set_color('black')
     ax.spines['bottom'].set_color('black')
     
     # Add value labels
     for container in ax.containers:
-        ax.bar_label(container, fmt='%.4f', padding=3, fontsize=8, fontname='Times New Roman')
+        ax.bar_label(container, fmt='%.4f', padding=3, fontsize=8, fontname='Arial')
         
     plt.tight_layout()
     
     if file_path:
         if not os.path.exists(file_path):
             os.makedirs(file_path)
-        filename = f"{version}_feature_selection_comparison.pdf"
-        plt.savefig(os.path.join(file_path, filename), format='pdf', bbox_inches='tight')
+        filename = f"{version}_feature_selection_comparison.png"
+        plt.savefig(os.path.join(file_path, filename), format='png', bbox_inches='tight')
         print(f"Saved plot to {os.path.join(file_path, filename)}")
         
     plt.show()
     plt.close()
 
 # --------------------------------------------------------------------------------------
+# ML FUCNTIONS - METRICS LOGGING AND PLOTTING
 def log_metrics(model_results, model_name, accuracy, precision, recall, f1, train_time, pred_time):
     """
     Calculates metrics and appends them to the model_results list.
@@ -1068,27 +1051,27 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
             continue
             
         # Create a new figure for every metric
-        plt.figure(figsize=(4, 3.5))
+        plt.figure(figsize=(3.35, 3.5))
         
         # Create bar chart
         # hue='Model' assigns colors, legend=False hides the redundant legend
         ax = sns.barplot(x='Model', y=metric, data=df_results, hue='Model', legend=False, zorder=2)
         
         # Titles and Labels
-        plt.ylabel(metric, fontsize=10, fontname='Times New Roman')
-        plt.xlabel('Model', fontsize=10, fontname='Times New Roman')
-        plt.xticks(rotation=90, fontsize=8, fontname='Times New Roman', ha='right')
-        plt.yticks(fontsize=8, fontname='Times New Roman')
+        plt.ylabel(metric, fontsize=9, fontname='Arial')
+        plt.xlabel('Model', fontsize=9, fontname='Arial')
+        plt.xticks(rotation=90, fontsize=8, fontname='Arial', ha='right')
+        plt.yticks(fontsize=8, fontname='Arial')
         
-        ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
+        # ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0) # Grid disabled
+        # ax.spines['top'].set_visible(False)
+        # ax.spines['right'].set_visible(False)
         
         # Add value labels on top of bars
         for container in ax.containers:
             # Use 4 decimal places for accuracy/f1, 2 decimals for time
             fmt = '%.4f' if 'Time' not in metric else '%.2f'
-            ax.bar_label(container, fmt=fmt, padding=3, fontsize=8, fontname='Times New Roman')
+            ax.bar_label(container, fmt=fmt, padding=3, fontsize=8, fontname='Arial')
             
         # Adjust layout
         plt.tight_layout()
@@ -1097,8 +1080,8 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
         if save_dir:
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-            filename = f"{version}_comparison_{metric.lower().replace(' ', '_').replace('(', '').replace(')', '')}.pdf"
-            plt.savefig(os.path.join(save_dir, filename), format='pdf', bbox_inches='tight')
+            filename = f"{version}_comparison_{metric.lower().replace(' ', '_').replace('(', '').replace(')', '')}.png"
+            plt.savefig(os.path.join(save_dir, filename), format='png', bbox_inches='tight')
             print(f"Saved {filename}")
             
         plt.show()
@@ -1162,27 +1145,145 @@ def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, outp
         f.write("\n")
         
     # Plot confusion matrix
-    plt.figure(figsize=(4, 3.5))
+    plt.figure(figsize=(3.35, 3.5))
     
-    # IEEE Style Heatmap
+    # MDPI Style Heatmap
     ax = sns.heatmap(cm, annot=True, fmt='d', cbar=True, cmap='Blues',
                 xticklabels=output_encoder.classes_, yticklabels=output_encoder.classes_,
-                annot_kws={"size": 6}, linewidths=0.5, linecolor='gray')
+                annot_kws={"size": 6, "fontname": "Arial"}, linewidths=0.5, linecolor='gray')
     
     # Explicitly remove grid (crucial for heatmaps when global grid is on)
     ax.grid(False)
     
-    plt.xlabel('Predicted Class', fontsize=10, fontname='Times New Roman')
-    plt.ylabel('True Class', fontsize=10, fontname='Times New Roman')
-    plt.xticks(rotation=90, ha='center', fontsize=8, fontname='Times New Roman')
-    plt.yticks(fontsize=8, fontname='Times New Roman')
+    plt.xlabel('Predicted Class', fontsize=9, fontname='Arial')
+    plt.ylabel('True Class', fontsize=9, fontname='Arial')
+    plt.xticks(rotation=90, ha='center', fontsize=8, fontname='Arial')
+    plt.yticks(fontsize=8, fontname='Arial')
     
     # Save confusion matrix plot
     # Use timestamp to prevent overwriting and include model identifier from results filename
     model_id = os.path.splitext(results_file_name)[0]
-    plt.savefig(os.path.join(file_path, f"{version}_{model_id}_{timestamp_safe}_confusion_matrix.pdf"), format='pdf', bbox_inches='tight')
+    plt.savefig(os.path.join(file_path, f"{version}_{model_id}_{timestamp_safe}_confusion_matrix.png"), format='png', bbox_inches='tight')
     plt.show()
     plt.close()
 
     return accuracy, precision, recall, f1
+
 # --------------------------------------------------------------------------------------
+# DL FUNCTIONS - PYTORCH TRAINING AND EVALUATION
+def create_dataloaders(X_train, y_train, X_val, y_val, batch_size=128):
+    # Ensure inputs are numpy arrays (handle DataFrames)
+    if hasattr(X_train, 'values'):
+        X_train = X_train.values
+    if hasattr(X_val, 'values'):
+        X_val = X_val.values
+
+    # Reshape to (N, 1, F) for consistency across LSTM, GRU, CNN
+    X_train_reshaped = X_train.reshape((X_train.shape[0], 1, X_train.shape[1]))
+    X_val_reshaped = X_val.reshape((X_val.shape[0], 1, X_val.shape[1]))
+    
+    train_features = torch.tensor(X_train_reshaped, dtype=torch.float32)
+    train_targets = torch.tensor(y_train, dtype=torch.long)
+    val_features = torch.tensor(X_val_reshaped, dtype=torch.float32)
+    val_targets = torch.tensor(y_val, dtype=torch.long)
+    
+    train_dataset = TensorDataset(train_features, train_targets)
+    val_dataset = TensorDataset(val_features, val_targets)
+    
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    
+    return train_loader, val_loader
+
+def train_and_evaluate_pytorch_model(model, train_loader, val_loader, num_epochs=10, device='cpu', model_name="Model", use_amp=False):
+    model = model.to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters())
+
+    # Determine device type for AMP (Automatic Mixed Precision)
+    if isinstance(device, str):
+        device_type = device.split(':')[0]
+    else:
+        device_type = device.type
+
+    # GradScaler is primarily for CUDA. For MPS (Mac M-series), standard float32 is often fast enough.
+    # If using CUDA, we initialize the scaler.
+    scaler = torch.cuda.amp.GradScaler() if (use_amp and device_type == 'cuda') else None
+    
+    if use_amp and device_type == 'mps':
+        print("[Warning] Mixed Precision (AMP) enabled on MPS. Gradient Scaling is disabled, which may cause instability. Recommend use_amp=False for M-series chips.")
+    
+    start_time = time.time()
+    train_acc_history = []
+    val_acc_history = []
+    
+    for epoch in range(num_epochs):
+        model.train()
+        correct = 0
+        total = 0
+        for inputs, labels in train_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            optimizer.zero_grad()
+            
+            # Mixed Precision Context
+            # Use generic torch.autocast which supports 'cuda', 'cpu', and 'mps' (PyTorch 2.1+)
+            if use_amp:
+                # MPS/CUDA use float16, CPU uses bfloat16 usually
+                amp_dtype = torch.float16 if device_type != 'cpu' else torch.bfloat16
+                with torch.autocast(device_type=device_type, dtype=amp_dtype):
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
+            else:
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+            
+            # Scale gradients to prevent underflow in float16
+            if scaler:
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                loss.backward()
+                optimizer.step()
+            
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+        train_acc_history.append(correct / total)
+        
+        model.eval()
+        correct_val = 0
+        total_val = 0
+        with torch.no_grad():
+            for inputs, labels in val_loader:
+                inputs, labels = inputs.to(device), labels.to(device)
+                outputs = model(inputs)
+                _, predicted = torch.max(outputs.data, 1)
+                total_val += labels.size(0)
+                correct_val += (predicted == labels).sum().item()
+        val_acc_history.append(correct_val / total_val)
+        
+    training_time = time.time() - start_time
+    
+    start_time = time.time()
+    model.eval()
+    all_preds = []
+    with torch.no_grad():
+        for inputs, _ in val_loader:
+            inputs = inputs.to(device)
+            outputs = model(inputs)
+            _, predicted = torch.max(outputs.data, 1)
+            all_preds.extend(predicted.cpu().numpy())
+    prediction_time = time.time() - start_time
+    y_pred = np.array(all_preds)
+    
+    plt.figure(figsize=(3.35, 2.5))
+    plt.plot(train_acc_history, label='Training Accuracy')
+    plt.plot(val_acc_history, label='Validation Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.show()
+    plt.close()
+
+    return y_pred, training_time, prediction_time
