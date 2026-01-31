@@ -628,13 +628,13 @@ def perform_embedded_feature_selection(X_train, y_train, n_features_to_select=20
 
     if method == 'lasso':
         # L1 Regularization
-        model = LogisticRegression(penalty='l1', solver='saga', C=0.1, random_state=42, max_iter=10000)
+        model = LogisticRegression(l1_ratio=1, solver='saga', C=0.1, random_state=42, max_iter=10000)
     elif method == 'ridge':
         # L2 Regularization (Ridge) - selects based on coef magnitude
-        model = LogisticRegression(penalty='l2', solver='lbfgs', C=0.1, random_state=42, max_iter=10000)
+        model = LogisticRegression(l1_ratio=0, solver='lbfgs', C=0.1, random_state=42, max_iter=10000)
     elif method == 'elastic_net':
         # Elastic Net
-        model = LogisticRegression(penalty='elasticnet', solver='saga', l1_ratio=0.5, C=0.1, random_state=42, max_iter=10000)
+        model = LogisticRegression(l1_ratio=0.5, solver='saga', C=0.1, random_state=42, max_iter=10000)
     elif method == 'rf':
         model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
     elif method == 'gradient_boosting':
@@ -697,8 +697,8 @@ def compare_feature_selection_methods(X_train, y_train, X_val, y_val, n_features
 
     print(f"\n{'='*40}\nComparing Feature Selection Methods\n{'='*40}")
     
-    #eval_model = RandomForestClassifier(n_estimators=100, random_state=random_state, n_jobs=-1)
-    eval_model = MLPClassifier(hidden_layer_sizes=(128, 96, 64, 48), max_iter=300, activation='relu', solver='adam', alpha=0.005, verbose=True, random_state=random_state)
+    eval_model = RandomForestClassifier(n_estimators=100, random_state=random_state, n_jobs=-1)
+    #eval_model = MLPClassifier(hidden_layer_sizes=(128, 96, 64, 48), max_iter=300, activation='relu', solver='adam', alpha=0.005, verbose=True, random_state=random_state)
 
     # --- Filter Methods ---
     if 'filter' in method_categories:
@@ -868,8 +868,9 @@ def compare_feature_transformation_methods(X_train, y_train, X_val, y_val, n_com
         y_sel = y_train
 
     print(f"\n{'='*40}\nComparing Feature Transformation Methods\n{'='*40}")
-    
-    eval_model = MLPClassifier(hidden_layer_sizes=(128, 96, 64, 48), max_iter=300, activation='relu', solver='adam', alpha=0.005, verbose=True, random_state=random_state)
+
+    eval_model = RandomForestClassifier(n_estimators=100, random_state=random_state, n_jobs=-1)
+    #eval_model = MLPClassifier(hidden_layer_sizes=(128, 96, 64, 48), max_iter=300, activation='relu', solver='adam', alpha=0.005, verbose=True, random_state=random_state)
 
     # --- Transformation Methods ---
     transformation_methods = ['pca', 'lda']
