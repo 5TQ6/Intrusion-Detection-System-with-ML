@@ -20,8 +20,9 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import MinMaxScaler, PowerTransformer, StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from imblearn.over_sampling import SMOTE, ADASYN, BorderlineSMOTE
+from imblearn.over_sampling import SMOTE, ADASYN, BorderlineSMOTE, SVMSMOTE
 from imblearn.under_sampling import RandomUnderSampler
+from imblearn.pipeline import Pipeline
 from sklearn.neural_network import MLPClassifier
 
 def apply_ieee_style():
@@ -254,19 +255,10 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='st
     return X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
 
 def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder, file_path, version, sampling_method='smote', plot_distributions=True):
-    
-    # --- GLOBAL IEEE STYLE SETTINGS ---
-    # Apply this once so all charts look professional
-    # plt.rcParams.update({
-    #     "font.family": "serif",
-    #     "font.serif": ["Times New Roman"],
-    #     "font.size": 10,
-    #     "axes.labelsize": 10,
-    #     "legend.fontsize": 8,
-    #     "xtick.labelsize": 8,
-    #     "ytick.labelsize": 8,
-    #     "figure.figsize": (3.5, 3.0) # Matches IEEE Column Width
-    # })
+
+
+    if not os.path.exists(file_path):
+        os.makedirs(file_path)
 
     ## 1. Data Balance Plotting (Before Sampling)
     if plot_distributions:
@@ -311,11 +303,33 @@ def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
     # print_memory_usage(f"Before Sampling ({sampling_method})") 
     
     if sampling_method == 'smote':
+        sampler = SMOTE(random_state=42)
+    elif sampling_method == 'borderline_smote':
         sampler = BorderlineSMOTE(random_state=42, kind='borderline-1')
     elif sampling_method == 'adasyn':
         sampler = ADASYN(random_state=42)
     elif sampling_method == 'undersample':
         sampler = RandomUnderSampler(random_state=42)
+    elif sampling_method == 'hybrid_100k':
+        # Calculate class counts
+        unique, counts = np.unique(y_train, return_counts=True)
+        class_counts = dict(zip(unique, counts))
+        target_count = 100000
+        
+        # Define strategies
+        under_strategy = {k: target_count for k, v in class_counts.items() if v > target_count}
+        over_strategy = {k: target_count for k, v in class_counts.items() if v < target_count}
+        
+        steps = []
+        if under_strategy:
+            steps.append(('under', RandomUnderSampler(sampling_strategy=under_strategy, random_state=42)))
+        if over_strategy:
+            steps.append(('over', SMOTE(sampling_strategy=over_strategy, random_state=42)))
+            
+        if steps:
+            sampler = Pipeline(steps)
+        else:
+            sampler = None
     else:
         sampler = None
 
@@ -1052,7 +1066,7 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
             continue
             
         # Create a new figure for every metric
-        plt.figure(figsize=(3.35, 3.5))
+        plt.figure(figsize=(7.1, 4))
         
         # Create bar chart
         # hue='Model' assigns colors, legend=False hides the redundant legend
@@ -1061,7 +1075,7 @@ def plot_individual_metrics(model_results, save_dir=None, version='v1'):
         # Titles and Labels
         plt.ylabel(metric, fontsize=9, fontname='Arial')
         plt.xlabel('Model', fontsize=9, fontname='Arial')
-        plt.xticks(rotation=90, fontsize=8, fontname='Arial', ha='right')
+        plt.xticks(rotation=0, fontsize=8, fontname='Arial', ha='right')
         plt.yticks(fontsize=8, fontname='Arial')
         
         # ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0) # Grid disabled
