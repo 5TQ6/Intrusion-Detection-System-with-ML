@@ -1,4 +1,4 @@
-<title>Smart Cybersecurity for 5G: Advanced Machine Learning Based Intrusion Detection</title>
+# Smart Cybersecurity for 5G: Advanced Machine Learning Based Intrusion Detection
 <h1>Information about the files</h1>
 <h2>1. Feature Engineering & Benchmarking Engine (main.ipynb) </h2>
 
