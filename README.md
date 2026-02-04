@@ -1,5 +1,4 @@
-<img width="468" height="57" alt="image" src="https://github.com/user-attachments/assets/d6c70a0f-82d6-4cf8-af90-3ad96c88a72f" />
-
+<title>Smart Cybersecurity for 5G: Advanced Machine Learning Based Intrusion Detection</title>
 <h1>Information about the files</h1>
 <h2>1. Feature Engineering & Benchmarking Engine (main.ipynb) </h2>
 
@@ -76,3 +75,8 @@ This script acts as the modular backbone of the framework, ensuring scientific c
 * **Standardized Evaluation:**
     * `print_evaluation_metrics`: Automatically logs Accuracy, Weighted Precision/Recall/F1, and Latency to text files.
     * **MDPI-Style Plots**: `apply_ieee_style()` sets global matplotlib parameters (font sizes, dimension 8.5cm width) to ensure all Confusion Matrices and Bar Charts meet journal publication standards.
+
+<h1>Reproduce the results</h1>
+* To reproduce the results:
+   * 1.  For feature engineering, choose your evaluation model choice (RF/MLP) in the utils.py file specificly at (compare_feature_transformation_methods & compare_feature_selection_methods)              functions. You will have to change the model_name in the "imports" section of the main.ipynb file, the model should match what you chose in the utils.py
+   * 2. For data engineering, you have to modify the sampling_method in the "Arguments" section of the ML.ipynb to the sampling method you want                                                            (SMOTE/ADASYN/BorderlineSMOTE/Undersampling/Hybrid) or you can set it to (none) without any addition or (none) and pass class_weight='balanced' for the models.
