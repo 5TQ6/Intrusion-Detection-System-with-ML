@@ -77,6 +77,7 @@ This script acts as the modular backbone of the framework, ensuring scientific c
     * **MDPI-Style Plots**: `apply_ieee_style()` sets global matplotlib parameters (font sizes, dimension 8.5cm width) to ensure all Confusion Matrices and Bar Charts meet journal publication standards.
 
 <h1>Reproduce the results</h1>
+
 * **1. Feature Engineering Configuration:**
     * **Choose Evaluator:** Open `utils.py` and navigate to the `compare_feature_transformation_methods` and `compare_feature_selection_methods` functions. Select your desired evaluation model (Random Forest or MLP) by commenting/uncommenting the relevant lines.
     * **Match Imports:** Open `main.ipynb`. In the "Imports" section, ensure the `model_name` matches the choice you made in `utils.py`.
