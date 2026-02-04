@@ -25,7 +25,8 @@ from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 from sklearn.neural_network import MLPClassifier
 
-def apply_ieee_style():
+# Applies the MDPI academic style to all matplotlib plots for consistency in publications. This includes specific figure sizes, font choices, and color schemes that align with MDPI guidelines.
+def apply_mdpi_style():
     """Applies MDPI academic style to matplotlib plots."""
     plt.rcParams.update({
         'figure.figsize': (3.35, 3.0), # 8.5 cm approx 3.35 inches
@@ -47,9 +48,9 @@ def apply_ieee_style():
         'savefig.bbox': 'tight',
         'axes.prop_cycle': plt.cycler(color=['#0072B2', '#D55E00', '#009E73', '#CC79A7', '#F0E442', '#56B4E9'])
     })
+apply_mdpi_style()
 
-apply_ieee_style()
-
+# Removes artifacts, preprocesses the dataset, splits into train/val/test, encodes categorical variables, and scales/fixes skewness as specified.
 def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='standard', fix_skewness=False, split_ratios=(0.8, 0.9)):
     # low_memory=false handles mixed types
     df = pd.read_csv(db_path, low_memory=False)
@@ -254,6 +255,7 @@ def clean_database(db_path, image_save_path=None, do_scale=True, scaler_type='st
 
     return X_train, X_val, X_test, y_train, y_val, y_test, output_encoder
 
+# Applies sampling techniques to balance the dataset and visualizes class distributions before and after sampling.
 def preprocessing(X_train, X_val, X_test, y_train, y_val, y_test, output_encoder, file_path, version, sampling_method='smote', plot_distributions=True):
 
 
@@ -1185,7 +1187,8 @@ def print_evaluation_metrics(y_val, y_pred, training_time, prediction_time, outp
     return accuracy, precision, recall, f1
 
 # --------------------------------------------------------------------------------------
-# DL FUNCTIONS - PYTORCH TRAINING AND EVALUATION
+# DL FUNCTIONS - PYTORCH TRAINING AND EVALUATION (Not used for the ML notebook)
+"""
 def create_dataloaders(X_train, y_train, X_val, y_val, batch_size=128):
     # Ensure inputs are numpy arrays (handle DataFrames)
     if hasattr(X_train, 'values'):
@@ -1211,6 +1214,7 @@ def create_dataloaders(X_train, y_train, X_val, y_val, batch_size=128):
     return train_loader, val_loader
 
 def train_and_evaluate_pytorch_model(model, train_loader, val_loader, num_epochs=10, device='cpu', model_name="Model", use_amp=False):
+
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters())
@@ -1302,3 +1306,4 @@ def train_and_evaluate_pytorch_model(model, train_loader, val_loader, num_epochs
     plt.close()
 
     return y_pred, training_time, prediction_time
+"""
