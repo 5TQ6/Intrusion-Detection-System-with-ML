@@ -77,6 +77,12 @@ This script acts as the modular backbone of the framework, ensuring scientific c
     * **MDPI-Style Plots**: `apply_ieee_style()` sets global matplotlib parameters (font sizes, dimension 8.5cm width) to ensure all Confusion Matrices and Bar Charts meet journal publication standards.
 
 <h1>Reproduce the results</h1>
-* To reproduce the results:
-   * 1.  For feature engineering, choose your evaluation model choice (RF/MLP) in the utils.py file specificly at (compare_feature_transformation_methods & compare_feature_selection_methods)              functions. You will have to change the model_name in the "imports" section of the main.ipynb file, the model should match what you chose in the utils.py
-   * 2. For data engineering, you have to modify the sampling_method in the "Arguments" section of the ML.ipynb to the sampling method you want                                                            (SMOTE/ADASYN/BorderlineSMOTE/Undersampling/Hybrid) or you can set it to (none) without any addition or (none) and pass class_weight='balanced' for the models.
+* **1. Feature Engineering Configuration:**
+    * **Choose Evaluator:** Open `utils.py` and navigate to the `compare_feature_transformation_methods` and `compare_feature_selection_methods` functions. Select your desired evaluation model (Random Forest or MLP) by commenting/uncommenting the relevant lines.
+    * **Match Imports:** Open `main.ipynb`. In the "Imports" section, ensure the `model_name` matches the choice you made in `utils.py`.
+
+* **2. Data Engineering & Sampling:**
+    * **Select Strategy:** Open `ML.ipynb` and go to the **"Arguments"** section.
+    * **Set Sampling Method:** Modify the `sampling_method` variable to one of the following:
+        * Options: `'SMOTE'`, `'ADASYN'`, `'borderline_smote'`, `'undersample'`, `'hybrid_100k'`.
+    * **No Sampling:** Set `sampling_method = 'none'`. You can then optionally pass `class_weight='balanced'` to the model definitions to handle imbalance without resampling.
